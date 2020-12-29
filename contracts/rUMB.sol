@@ -6,13 +6,14 @@ import "./lib/Strings.sol";
 // Inheritance
 import "./interfaces/SwappableToken.sol";
 import "./interfaces/MintableToken.sol";
+import "./interfaces/BurnableToken.sol";
 
 
 /// @title   Umbrella Rewards contract
 /// @author  umb.network
 /// @notice  This is reward UMB token (rUMB)
 /// @dev     Rewards tokens are used for farming and other rewards distributions.
-contract rUMB is MintableToken, SwappableToken {
+contract rUMB is BurnableToken, MintableToken, SwappableToken {
   using Strings for string;
 
   // ========== STATE VARIABLES ========== //

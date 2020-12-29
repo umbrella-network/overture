@@ -3,12 +3,11 @@ pragma solidity 0.7.5;
 
 // import "@nomiclabs/buidler/console.sol";
 
-import "../extensions/Owned.sol";
-
 // Inheritance
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+import "../interfaces/Owned.sol";
 import "./MaxAllowedSupply.sol";
 
 /// @title   Umbrella Rewards contract

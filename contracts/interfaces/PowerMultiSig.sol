@@ -93,7 +93,7 @@ abstract contract PowerMultiSig {
 
   // ========== CONSTRUCTOR ========== //
 
-  constructor(address[] memory _owners, uint[] memory _powers, uint _requiredPower)
+  constructor(address[] memory _owners, uint256[] memory _powers, uint256 _requiredPower)
   validRequirement(_owners.length, sum(_powers), _requiredPower)
   {
     uint sumOfPowers = 0;

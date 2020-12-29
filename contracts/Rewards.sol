@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-import "./extensions/Owned.sol";
+import "./interfaces/Owned.sol";
 
 /// @title   Umbrella Rewards contract
 /// @author  umb.network

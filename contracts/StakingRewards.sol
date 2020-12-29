@@ -8,9 +8,8 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 // Inheritance
 import "./interfaces/IStakingRewards.sol";
-
-import "./extensions/Pausable.sol";
-import "./extensions/RewardsDistributionRecipient.sol";
+import "./interfaces/Pausable.sol";
+import "./interfaces/RewardsDistributionRecipient.sol";
 
 
 contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, ReentrancyGuard, Pausable {
@@ -83,9 +82,7 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
   // ========== MUTATIVE FUNCTIONS ========== //
 
   function stake(uint256 amount) override external nonReentrant notPaused updateReward(msg.sender) {
-    /// console.log('stake:', amount);
-    // allow users to stake early
-    // require(periodFinish == 0, "Stake period not started yet");
+    require(periodFinish == 0, "Stake period not started yet");
 
     require(amount > 0, "Cannot stake 0");
     _totalSupply = _totalSupply.add(amount);
@@ -123,8 +120,6 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
   function notifyRewardAmount(
     uint256 reward
   ) override virtual external onlyRewardsDistribution updateReward(address(0)) {
-    /// console.log(reward, periodFinish, rewardRate);
-
     if (block.timestamp >= periodFinish) {
       rewardRate = reward.div(rewardsDuration);
     } else {
@@ -143,11 +138,6 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
     lastUpdateTime = block.timestamp;
     periodFinish = block.timestamp.add(rewardsDuration);
     emit RewardAdded(reward);
-
-    /// console.log('_contract balance:', balance);
-    /// console.log('______reward:', reward);
-    /// console.log('periodFinish:', periodFinish);
-    /// console.log('_rewardRate:', rewardRate);
   }
 
   function setRewardsDuration(uint256 _rewardsDuration) virtual external onlyOwner {
@@ -168,9 +158,6 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
     if (account != address(0)) {
       rewards[account] = earned(account);
       userRewardPerTokenPaid[account] = rewardPerTokenStored;
-      /// console.log('updateReward:', account);
-      /// console.log('___balanceOf:', _balances[account]);
-      /// console.log('_____rewards:', rewards[account]);
     }
     _;
   }

@@ -4,7 +4,6 @@ pragma solidity 0.7.5;
 // Inheritance
 import "./Owned.sol";
 
-
 // https://docs.synthetix.io/contracts/SelfDestructible
 abstract contract SelfDestructible is Owned {
     uint public constant SELFDESTRUCT_DELAY = 4 weeks;
