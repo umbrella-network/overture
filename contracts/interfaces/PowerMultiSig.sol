@@ -23,11 +23,6 @@ abstract contract PowerMultiSig {
     bytes data;
   }
 
-  struct NewMinterRequest {
-    address newMinter;
-    uint executed;
-  }
-
   mapping (uint => Transaction) public transactions;
   mapping (uint => mapping (address => bool)) public confirmations;
   mapping (address => uint) public ownersPowers;
@@ -254,17 +249,22 @@ abstract contract PowerMultiSig {
       let x := mload(0x40) // "Allocate" memory for output (0x40 is where "free memory" pointer is stored by convention)
       let d := add(_data, 32) // First 32 bytes are the padded length of data, so exclude that
       result := call(
-      sub(gas(), 34710),   // 34710 is the value that solidity is currently emitting
-      // It includes callGas (700) + callVeryLow (3, to pay for SUB) + callValueTransferGas (9000) +
-      // callNewAccountGas (25000, in case the destination address does not exist and needs creating)
-      _destination,
-      _value,
-      d,
-      _dataLength,        // Size of the input (in bytes) - this is what fixes the padding problem
-      x,
-      0                  // Output is ignored, therefore the output size is zero
+        sub(gas(), 34710),   // 34710 is the value that solidity is currently emitting
+        // It includes callGas (700) + callVeryLow (3, to pay for SUB) + callValueTransferGas (9000) +
+        // callNewAccountGas (25000, in case the destination address does not exist and needs creating)
+        _destination,
+        _value,
+        d,
+        _dataLength,        // Size of the input (in bytes) - this is what fixes the padding problem
+        x,
+        0                  // Output is ignored, therefore the output size is zero
       )
     }
+
+    // hack for getting result value, for some reason wo this, it was always return false
+    // @todo why result value is not passed if I do not add require?
+    require(result);
+
     return result;
   }
 
@@ -308,6 +308,22 @@ abstract contract PowerMultiSig {
     }
 
     return false;
+  }
+
+  function isExceuted(uint _transactionId) public view returns (bool) {
+    return transactions[_transactionId].executed != 0;
+  }
+
+  function getTransactionShort(uint _transactionId)
+  public view returns (address destination, uint value, uint executed) {
+    Transaction memory t = transactions[_transactionId];
+    return (t.destination, t.value, t.executed);
+  }
+
+  function getTransaction(uint _transactionId)
+  public view returns (address destination, uint value, uint executed, bytes memory data) {
+    Transaction memory t = transactions[_transactionId];
+    return (t.destination, t.value, t.executed, t.data);
   }
 
   /*

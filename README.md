@@ -57,6 +57,9 @@ npx hardhat
 npx eslint --init
 solhint --init
 touch .env .env.staging
+
+# this is for flattener to work
+ln -s hardhat.config.ts buidler.config.ts
 ```
 
 ### Setup
@@ -71,10 +74,21 @@ Check available scripts in `package.json`
 
 ### Compiling and migrating smart contracts
 
+There is configuration file `config/config.ts` where you can adjust settings for each environment.
+
+#### Deployment of Stage 0 - Auction
+
+Script will deploy all contracts that are needed fo run the Auction.  
+It will also try to mint tokens for auction - final execution of that depends on MultiSig.
+
+```shell
+npm run deploy:stage0[:env]
+```
+
 #### localhost
 
 ```shell
-TBD
+
 ```
 
 ## Licensed under MIT.
