@@ -4,11 +4,11 @@ pragma solidity 0.7.5;
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "./interfaces/BurnableToken.sol";
+import "./interfaces/IBurnableToken.sol";
 import "./interfaces/Owned.sol";
 
 contract Auction is Owned {
-  using SafeERC20 for BurnableToken;
+  using SafeERC20 for IERC20;
   using SafeMath for uint;
 
   // ========== STATE VARIABLES ========== //
@@ -20,13 +20,13 @@ contract Auction is Owned {
   uint public minimalRequiredLockedEth;
   uint public maximumLockedEth;
 
-  BurnableToken public immutable UMB;
+  address public immutable UMB;
 
   mapping(address => uint) public balances;
 
   // ========== CONSTRUCTOR ========== //
 
-  constructor(BurnableToken _umb, address _owner) Owned(_owner) {
+  constructor(address _owner, address _umb) Owned(_owner) {
     require(address(_umb) != address(0x0), "ump address is empty");
 
     UMB = _umb;
@@ -132,7 +132,7 @@ contract Auction is Owned {
     if (wasAuctionSuccessful()) {
       require(umbShares > 0, "you don't have any UMB");
 
-      UMB.safeTransfer(msg.sender, umbShares);
+      IERC20(UMB).safeTransfer(msg.sender, umbShares);
     } else {
       require(ethBalance > 0, "you don't have any ETH");
 
@@ -175,7 +175,8 @@ contract Auction is Owned {
     require(maximumLockedEth > 0, "maximumLockedEth is not set");
 
     auctionEndsAt = block.timestamp + 3 days;
-    totalUMBOnSale = UMB.balanceOf(address(this));
+    totalUMBOnSale = IERC20(UMB).balanceOf(address(this));
+    require(totalUMBOnSale != 0, "there is nothing to sale");
 
     emit LogStart(auctionEndsAt, _minimalEthPricePerToken, _minimalRequiredLockedEth);
   }
@@ -189,7 +190,7 @@ contract Auction is Owned {
   function withdrawUMB() external onlyOwner whenAuctionOver {
     require(!wasAuctionSuccessful(), "auction was successful, can't withdraw UMB, you can only burn it");
 
-    UMB.safeTransfer(owner(), UMB.balanceOf(address(this)));
+    IERC20(UMB).safeTransfer(owner(), IERC20(UMB).balanceOf(address(this)));
   }
 
   function burnUnsoldUMB() external onlyOwner whenAuctionOver {
@@ -198,7 +199,7 @@ contract Auction is Owned {
     uint toBurn = unsoldUMB();
     require(toBurn  > 0, "all sold! nothing to burn");
 
-    UMB.burn(toBurn);
+    IBurnableToken(UMB).burn(toBurn);
   }
 
   // ========== EVENTS ========== //

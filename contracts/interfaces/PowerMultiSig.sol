@@ -263,7 +263,7 @@ abstract contract PowerMultiSig {
 
     // hack for getting result value, for some reason wo this, it was always return false
     // @todo why result value is not passed if I do not add require?
-    require(result);
+    require(result, "tx failed on destination contract");
 
     return result;
   }

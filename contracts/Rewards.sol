@@ -40,6 +40,10 @@ contract Rewards is Owned {
 
   // ========== VIEWS ========== //
 
+  function participantsCount() public view returns (uint) {
+    return participants.length;
+  }
+
   function balanceOf(address _address) public view returns (uint) {
     uint start = distributionStartTime;
 
@@ -68,6 +72,8 @@ contract Rewards is Owned {
     emit LogClaimed(_msgSender(), balance);
   }
 
+  // ========== RESTRICTED FUNCTIONS ========== //
+
   function startDistribution(
     ERC20 _rewardToken,
     uint _startTime,
@@ -75,11 +81,10 @@ contract Rewards is Owned {
     uint[] calldata _rewards,
     uint[] calldata _durations
   )
-  external
-  onlyOwner {
+  external onlyOwner {
     require(_participants.length != 0, "there is no _participants");
-    require(_participants.length != _rewards.length, "_participants count must much _rewards count");
-    require(_participants.length != _durations.length, "_participants count must much _durations count");
+    require(_participants.length == _rewards.length, "_participants count must match _rewards count");
+    require(_participants.length == _durations.length, "_participants count must match _durations count");
     require(_startTime != 0, "start time is empty");
 
     distributionStartTime = _startTime;
@@ -95,12 +100,12 @@ contract Rewards is Owned {
     rewardToken = _rewardToken;
     participants = _participants;
 
-    transferOwnership(address(0));
-    emit LogBurnKey(address(0));
+    renounceOwnership();
+    emit LogBurnKey();
   }
 
   // ========== EVENTS ========== //
 
   event LogClaimed(address indexed recipient, uint amount);
-  event LogBurnKey(address owner);
+  event LogBurnKey();
 }

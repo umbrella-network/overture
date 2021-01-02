@@ -149,7 +149,6 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
     emit RewardsDurationUpdated(rewardsDuration);
   }
 
-
   // ========== MODIFIERS ========== //
 
   modifier updateReward(address account) virtual {

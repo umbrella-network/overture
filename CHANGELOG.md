@@ -9,7 +9,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - initial version
 - configuration for deployment
 - scripts to deploy stage 0: Auction
+- additional helpers for `Auction` and `Rewards` in MultiSig
+
+### Changed
+- merge `BurnableToken` and `MaxAllowedSupply` into `MintableToken`
 
 ### Fixed
 - `PowerMultiSig` wallet has trouble with returning right result for `.external_call()`.
   It is fixed, but we should take a second look on this. It's marked with `@todo`
+- Fix invalid requirements about participants count in `Rewards.startDistribution()`
