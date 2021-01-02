@@ -1,11 +1,11 @@
 import 'dotenv/config';
 import hre from 'hardhat';
-import {Provider} from '@ethersproject/providers'
+import {Log, Provider, TransactionReceipt} from '@ethersproject/providers'
 import CONFIG from "../config/config";
-import {TransactionReceipt} from "@ethersproject/providers";
+import {Contract} from "@ethersproject/contracts";
 
-const { INFURA_ID } = process.env;
-const { ethers, getNamedAccounts } = hre;
+const {INFURA_ID} = process.env;
+const {ethers, getNamedAccounts} = hre;
 
 export const validationMark = (valid: boolean | undefined = undefined) => {
   if (valid === undefined) {
@@ -17,13 +17,9 @@ export const validationMark = (valid: boolean | undefined = undefined) => {
 
 export const isLocalNetwork = () => ['buidlerevm', 'localhost'].includes(hre.network.name);
 
-export const getDefaultOwnerBasedOnConfig = async (): Promise<string | undefined> => {
-  if (CONFIG.multiSig.useIt) {
-    return CONFIG.multiSig.address
-  }
-
+export const getDefaultOwner = async (): Promise<string> => {
   const {deployer} = await getNamedAccounts();
-  return CONFIG.defaultOwner || deployer
+  return CONFIG.multiSig.address || deployer
 }
 
 export const getProvider = () => {
@@ -61,3 +57,54 @@ export const toBytes32 = (str: string) => {
 export const constructorAbi = (types: string[], values: any[]) => {
   return ethers.utils.defaultAbiCoder.encode(types, values).replace('0x', '')
 }
+
+const extractDataFromIndexedTopicLog = (logName: string, dataTypes: Record<string, string>[], logs: Log[]): Record<string, any> | undefined => {
+  let found: string[] | undefined
+  const types = dataTypes.reduce((acc, rec) => acc.concat(Object.values(rec)[0]), <string[]>[]);
+  const nameHash = ethers.utils.keccak256(Buffer.from(`${logName}(${types.join(',')})`));
+
+  logs.forEach(log => {
+    if (log.topics && !found && log.topics[0] === nameHash) {
+      found = log.topics.slice(0)
+    }
+  });
+
+  if (!found) {
+    return;
+  }
+
+  return dataTypes.reduce((acc, rec, i) => {
+    const param = Object.keys(rec)[0]
+    const type = rec[param]
+
+    switch (type) {
+      case 'uint':
+      case 'uint256': acc[param] = ethers.BigNumber.from(found![i + 1]);
+      break;
+      default: acc[param] = found![i + 1];
+    }
+    return acc;
+  }, <Record<string, any>>{});
+}
+
+export const checkTxSubmission = (multiSig: Contract, receipt: TransactionReceipt | undefined): string => {
+  if (!receipt) {
+    validationMark(false)
+    throw Error('there is no receipt')
+  }
+
+  const logSubmission = extractDataFromIndexedTopicLog('LogSubmission', [{transactionId: 'uint256'}], receipt!.logs)
+  return logSubmission!.transactionId.toString()
+}
+
+export const wasTxExecuted = async (multiSig: Contract, transactionId: string): Promise<boolean> => {
+  const executed = await multiSig.isExceuted(transactionId)
+  console.log('MultiSig Tx ID for mint for DeFi:', transactionId)
+  console.log('Tx need additional owners to confirm:', !executed)
+  console.log('Tx details:', await multiSig.getTransaction(transactionId))
+  return executed
+}
+
+export const oneMonth = 60 * 60 * 24 * 365 / 12
+
+export const currentTimestamp = Math.round(Date.now() / 1000)

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - configuration for deployment
 - scripts to deploy stage 0: Auction
 - additional helpers for `Auction` and `Rewards` in MultiSig
+- scripts to deploy stage 1: DeFi farming
 
 ### Changed
 - merge `BurnableToken` and `MaxAllowedSupply` into `MintableToken`

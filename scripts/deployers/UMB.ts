@@ -20,15 +20,15 @@ export const deployUMB = async (owner: string) => {
   const {initialHolder, initialBalance, maxAllowedTotalSupply, name, symbol} = CONFIG.UMB
 
   const contract = await Contract.deploy(
+    owner,
     initialHolder,
     initialBalance,
-    owner,
     maxAllowedTotalSupply,
     name,
     symbol
   );
 
   await contract.deployed();
-  console.log('UMB:', contract.address);
+  console.log('deployed UMB:', contract.address);
   return contract;
 };

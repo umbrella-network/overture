@@ -11,8 +11,8 @@ export const multiSigContract = async (): Promise<Contract> => {
     throw Error('CONFIG.multiSig.address is empty')
   }
 
-  const {deployer} = await getNamedAccounts();
-  return new ethers.Contract(CONFIG.multiSig.address, UmbMultiSig.abi, getProvider()).connect(deployer);
+  const {multiSigOwner1} = await getNamedAccounts();
+  return new ethers.Contract(CONFIG.multiSig.address, UmbMultiSig.abi, getProvider()).connect(multiSigOwner1);
 }
 
 export const deployUmbMultiSig = async (libStrings: string): Promise<Contract> => {

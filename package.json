@@ -49,6 +49,8 @@
     "deploy": "NODE_ENV=development npx hardhat run --network localhost ./scripts/deploy-all.ts",
     "deploy:stage0": "NODE_ENV=development npx hardhat run --network localhost ./scripts/deploy-stage0-auction.ts",
     "deploy:stage0:staging": "NODE_ENV=staging npx hardhat run --network kovan ./scripts/deploy-stage0-auction.ts",
+    "deploy:stage1": "NODE_ENV=development npx hardhat run --network localhost ./scripts/deploy-stage1-farming.ts",
+
     "compile": "npx hardhat compile",
     "node": "npx hardhat node",
     "lint-sol": "solhint \"contracts/**/*.sol\"",
