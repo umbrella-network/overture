@@ -11,6 +11,8 @@ import {deployStakingRewards} from "./deployers/StakingRewards";
 const {ethers, getNamedAccounts} = hre;
 const {BigNumber} = ethers
 
+const breakLog = () => console.log(`\n${'-'.repeat(30)}\n\n`)
+
 async function main() {
   const {deployer} = await getNamedAccounts();
   const multiSigOwnerWallet = (await ethers.getSigners())[<number>hre.config.namedAccounts.multiSigOwner1];
@@ -41,29 +43,35 @@ async function main() {
   const rUmb1 = await deployRUMB1(multiSig.address, libStrings)
   const rewards = await deployRewards(multiSig.address)
 
-  console.log(`\nMinting rewards for individual vesting...`)
+  breakLog();
+  console.log(`Minting rewards for individual vesting...`)
 
-  const rewardsSum = CONFIG.stage1.rewards.amounts.reduce(
-    (acc, amount) => acc.add(BigNumber.from(amount)), BigNumber.from(0)
+  const umbRewardsSum = CONFIG.stage1.umbRewards.data.reduce(
+    (acc, data) => acc.add(BigNumber.from(data.amount)), BigNumber.from(0)
   );
 
   let tx;
 
-  if (rewardsSum.gt(0)) {
-    console.log('> total reward amount to mint:', rewardsSum.toString(), 'rUMB1')
+  if (umbRewardsSum.gt(0)) {
+    console.log('> total reward amount to mint:', umbRewardsSum.toString(), 'rUMB1')
 
     let tx = await multiSig
       .connect(multiSigOwnerWallet)
-      .submitTokenMintTx(rUmb1.address, rewards.address, rewardsSum.toString())
+      .submitTokenMintTx(rUmb1.address, rewards.address, umbRewardsSum.toString())
 
     let txId = checkTxSubmission(multiSig, await waitForTx(tx.hash, provider));
     await wasTxExecuted(multiSig, txId)
 
     console.log('Balance of Rewards contract:', (await rUmb1.balanceOf(rewards.address)).toString())
+    breakLog();
     console.log('starting distribution...')
 
-    if ((await rUmb1.balanceOf(rewards.address)).toString() === rewardsSum.toString()) {
-      const {startTime, participants, amounts, durations} = CONFIG.stage1.rewards
+    if ((await rUmb1.balanceOf(rewards.address)).toString() === umbRewardsSum.toString()) {
+      const {startTime, data} = CONFIG.stage1.umbRewards
+
+      const participants: string[] = data.map(data => data.participant)
+      const amounts: string[] = data.map(data => data.amount)
+      const durations: number[] = data.map(data => data.duration)
 
       let tx = await multiSig
         .connect(multiSigOwnerWallet)
@@ -88,7 +96,8 @@ async function main() {
     console.log('there is no rewards set, skipping deployment of Rewards contract')
   }
 
-  console.log(`\nMinting rewards for DeFi farming...`)
+  breakLog();
+  console.log('Minting rewards for DeFi farming...')
 
   const stakingRewards = await deployStakingRewards(multiSig.address, rUmb1.address)
 
@@ -97,8 +106,8 @@ async function main() {
     .submitTokenMintTx(rUmb1.address, stakingRewards.address, CONFIG.stage1.farming.tokenAmountForDeFiRewards)
 
   let txId = checkTxSubmission(multiSig, await waitForTx(tx.hash, provider));
-
   await wasTxExecuted(multiSig, txId)
+
   console.log('Notify StakingRewards about reward amount, MultiSig tx ID:', txId)
 
   tx = await multiSig

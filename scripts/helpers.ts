@@ -107,4 +107,6 @@ export const wasTxExecuted = async (multiSig: Contract, transactionId: string): 
 
 export const oneMonth = 60 * 60 * 24 * 365 / 12
 
+export const oneYear = 60 * 60 * 24 * 365
+
 export const currentTimestamp = Math.round(Date.now() / 1000)

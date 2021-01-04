@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 // Inheritance
 import "./interfaces/IStakingRewards.sol";
 import "./interfaces/Pausable.sol";
+import "./interfaces/IBurnableToken.sol";
 import "./interfaces/RewardsDistributionRecipient.sol";
 
 
@@ -159,7 +160,7 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
     uint tokensToBurn = delta.mul(rewardPerToken()).mul(_totalSupply).div(1e18);
 
     periodFinish = block.timestamp;
-    rewardsToken.burn(tokensToBurn);
+    IBurnableToken(address(rewardsToken)).burn(tokensToBurn);
     stopped = true;
   }
 

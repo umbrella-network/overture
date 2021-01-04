@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - additional helpers for `Auction` and `Rewards` in MultiSig
 - scripts to deploy stage 1: DeFi farming
 - stop method for farming
+- initial config for launch
 
 ### Changed
 - merge `BurnableToken` and `MaxAllowedSupply` into `MintableToken`
@@ -20,3 +21,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `PowerMultiSig` wallet has trouble with returning right result for `.external_call()`.
   It is fixed, but we should take a second look on this. It's marked with `@todo`
 - Fix invalid requirements about participants count in `Rewards.startDistribution()`
+- quick fix for missing `ERC20.burn()` during `StakingRewards` compilation

@@ -1,10 +1,16 @@
 import {ethers} from "ethers";
 import hre from 'hardhat';
-import {currentTimestamp, oneMonth} from "../scripts/helpers";
+import {currentTimestamp, oneMonth, oneYear} from "../scripts/helpers";
 
 const env = process.env.NODE_ENV || 'development';
 const {toWei} = hre.web3.utils
 console.log('env', env);
+
+export type RewardsData = {
+  participant: string
+  amount: string
+  duration: number
+}
 
 export type ConfigType = {
   env: string
@@ -43,15 +49,13 @@ export type ConfigType = {
     }
     farming: {
       address?: string,
-      rewardsDistribution: string   // it can be multisig or any account
+      rewardsDistribution?: string   // default is MultiSig
       tokenAmountForDeFiRewards: string
     },
-    rewards: {
+    umbRewards: {
       address?: string
       startTime: number
-      participants: string[]
-      amounts: string[]
-      durations: number[]
+      data: RewardsData[]
     }
   },
 }
@@ -61,10 +65,10 @@ const envConfig: Record<string, ConfigType> = {
     env: 'development',
     contractRegistry: {},
     libs: {
-      strings: '0xA48096237053a0B74E15cEd6FA33F7c96A5acf50'
+      strings: '0xf4e77E5Da47AC3125140c470c71cBca77B5c638c'
     },
     multiSig: {
-      address: '0x1256eBA4d0a7A38D10BaF4F61775ba491Ce7EE25',
+      address: '0xf784709d2317D872237C4bC22f867d1BAe2913AB',
       owners: [
         '0xead9c93b79ae7c1591b1fb5323bd777e86e150d4' // one of defined addresses in local node
       ],
@@ -72,7 +76,7 @@ const envConfig: Record<string, ConfigType> = {
       requiredPower: 5
     },
     UMB: {
-      address: '0x77B0b5636fEA30eA79BB65AeCCdb599997A849A8',
+      address: '0x3619DbE27d7c1e7E91aA738697Ae7Bc5FC3eACA5',
       maxAllowedTotalSupply: toWei('500000000', 'ether'),
       name: 'Umbrella',
       symbol: 'UMB',
@@ -80,7 +84,7 @@ const envConfig: Record<string, ConfigType> = {
       initialHolder: ethers.constants.AddressZero
     },
     auction: {
-      // address: '0x6D3540a9F1a769bfd91A4A33169a8361aa82dC0F',
+      // address: '0x038B86d9d8FAFdd0a02ebd1A476432877b0107C8',
       amountOfTokensForAuction: toWei('50000000', 'ether')
     },
     stage1: {
@@ -92,13 +96,17 @@ const envConfig: Record<string, ConfigType> = {
         maxAllowedTotalSupply: toWei('500000000', 'ether'),
       },
       farming: {
-        rewardsDistribution: '0x1256eBA4d0a7A38D10BaF4F61775ba491Ce7EE25',
+        // rewardsDistribution: '0x1256eBA4d0a7A38D10BaF4F61775ba491Ce7EE25',
         tokenAmountForDeFiRewards: toWei('123000', 'ether')
       },
-      rewards: {
-        participants: ['0x66f13FDceed822E74b6a1e08e082Fa699fF36454'],
-        amounts: [toWei('12', 'ether')],
-        durations: [oneMonth],
+      umbRewards: {
+        data: [
+          {
+            participant: '0x66f13FDceed822E74b6a1e08e082Fa699fF36454',
+            amount: toWei('12', 'ether'),
+            duration: oneMonth
+          }
+        ],
         startTime: currentTimestamp
       }
     }
@@ -135,10 +143,72 @@ const envConfig: Record<string, ConfigType> = {
         rewardsDistribution: ethers.constants.AddressZero,
         tokenAmountForDeFiRewards: '0'
       },
-      rewards: {
-        participants: [],
-        amounts: [],
-        durations: [],
+      umbRewards: {
+        data: [],
+        startTime: Date.UTC(2021, 1, 21)
+      }
+    }
+  },
+
+  launch: {
+    env: 'staging',
+    contractRegistry: {},
+    libs: {},
+    multiSig: {
+      owners: [],
+      powers: [],
+      requiredPower: 0
+    },
+    UMB: {
+      maxAllowedTotalSupply: hre.web3.utils.toWei('500000000', 'ether'),
+      name: 'Umbrella',
+      symbol: 'UMB',
+      initialBalance: toWei('15000000', 'ether'), // for liquidity
+      initialHolder: ethers.constants.AddressZero
+    },
+    auction: {
+      amountOfTokensForAuction: toWei('50000000', 'ether') //they will go directly to auction contract
+    },
+    stage1: {
+      rUmb: {
+        initialBalance: '0',
+        initialHolder: ethers.constants.AddressZero,
+        rewardId: 1,
+        swapDuration: 60 * 60 * 24 * 365 / 2,
+        maxAllowedTotalSupply: toWei('500000000', 'ether'),
+      },
+      farming: {
+        rewardsDistribution: ethers.constants.AddressZero,
+        tokenAmountForDeFiRewards: toWei('45833333', 'ether')
+      },
+      umbRewards: {
+        data: [
+          {
+            participant: 'node found address',
+            amount: toWei('50000000', 'ether'),
+            duration: oneYear * 4
+          },
+          {
+            participant: 'partner found address',
+            amount: toWei('50000000', 'ether'),
+            duration: oneYear * 4
+          },
+          {
+            participant: 'development found address',
+            amount: toWei('50000000', 'ether'),
+            duration: oneYear * 4
+          },
+          {
+            participant: 'contributors address',
+            amount: toWei('50000000', 'ether'),
+            duration: oneMonth * 18
+          },
+          {
+            participant: 'Founding Team address',
+            amount: toWei('51666667', 'ether'),
+            duration: oneYear * 4
+          },
+        ],
         startTime: Date.UTC(2021, 1, 21)
       }
     }
