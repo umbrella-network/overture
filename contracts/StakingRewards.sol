@@ -22,12 +22,14 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
   IERC20 public stakingToken;
   uint256 public periodFinish = 0;
   uint256 public rewardRate = 0;
-  uint256 public rewardsDuration = 10 days;
+  uint256 public rewardsDuration = 365 days;
   uint256 public lastUpdateTime;
   uint256 public rewardPerTokenStored;
 
   mapping(address => uint256) public userRewardPerTokenPaid;
   mapping(address => uint256) public rewards;
+
+  bool public stopped;
 
   uint256 private _totalSupply;
   mapping(address => uint256) private _balances;
@@ -62,8 +64,8 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
     if (_totalSupply == 0) {
       return rewardPerTokenStored;
     }
-    return
-    rewardPerTokenStored.add(
+
+    return rewardPerTokenStored.add(
       lastTimeRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(_totalSupply)
     );
   }
@@ -119,7 +121,7 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
 
   function notifyRewardAmount(
     uint256 reward
-  ) override virtual external onlyRewardsDistribution updateReward(address(0)) {
+  ) override virtual external whenActive onlyRewardsDistribution updateReward(address(0)) {
     if (block.timestamp >= periodFinish) {
       rewardRate = reward.div(rewardsDuration);
     } else {
@@ -140,7 +142,7 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
     emit RewardAdded(reward);
   }
 
-  function setRewardsDuration(uint256 _rewardsDuration) virtual external onlyOwner {
+  function setRewardsDuration(uint256 _rewardsDuration) virtual external whenActive onlyOwner {
     require(
       block.timestamp > periodFinish,
       "Previous rewards period must be complete before changing the duration for the new period"
@@ -149,7 +151,24 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
     emit RewardsDurationUpdated(rewardsDuration);
   }
 
+  // @todo test this well!!
+  function stop() external whenActive onlyOwner {
+    require(periodFinish != 0 && block.timestamp < periodFinish, "can't stop if not started or already finished");
+
+    uint delta = periodFinish - block.timestamp;
+    uint tokensToBurn = delta.mul(rewardPerToken()).mul(_totalSupply).div(1e18);
+
+    periodFinish = block.timestamp;
+    rewardsToken.burn(tokensToBurn);
+    stopped = true;
+  }
+
   // ========== MODIFIERS ========== //
+
+  modifier whenActive() {
+    require(!stopped, "farming is stopped");
+    _;
+  }
 
   modifier updateReward(address account) virtual {
     rewardPerTokenStored = rewardPerToken();
