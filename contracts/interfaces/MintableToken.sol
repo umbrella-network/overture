@@ -39,8 +39,8 @@ abstract contract MintableToken is Owned, ERC20, IBurnableToken {
     uint balance = balanceOf(msg.sender);
     require(_amount <= balance, "not enough tokens to burn");
 
-    _burn(msg.sender, balance);
-    maxAllowedTotalSupply = maxAllowedTotalSupply - balance;
+    _burn(msg.sender, _amount);
+    maxAllowedTotalSupply = maxAllowedTotalSupply - _amount;
   }
 
   // ========== RESTRICTED FUNCTIONS ========== //

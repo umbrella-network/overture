@@ -124,6 +124,8 @@ abstract contract PowerMultiSig {
 
     ownersPowers[_owner] = _power;
     owners.push(_owner);
+    totalCurrentPower = totalCurrentPower.add(_power);
+
     emit LogOwnerAddition(_owner, _power);
   }
 
