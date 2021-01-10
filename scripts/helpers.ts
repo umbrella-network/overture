@@ -97,7 +97,7 @@ export const checkTxSubmission = (multiSig: Contract, receipt: TransactionReceip
   return logSubmission!.transactionId.toString()
 }
 
-export const wasTxExecuted = async (multiSig: Contract, transactionId: string): Promise<boolean> => {
+export const wasTxExecutedByMultiSig = async (multiSig: Contract, transactionId: string): Promise<boolean> => {
   const executed = await multiSig.isExceuted(transactionId)
   console.log('MultiSig Tx ID for mint for DeFi:', transactionId)
   console.log('Tx need additional owners to confirm:', !executed)

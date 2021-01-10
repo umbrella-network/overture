@@ -51,7 +51,9 @@ module.exports = {
     },
     kovan: {
       url: `https://kovan.infura.io/v3/${INFURA_ID}`,
-      accounts: DEPLOYER_PK ? [DEPLOYER_PK] : [],
+      accounts: DEPLOYER_PK ? [
+        DEPLOYER_PK, // deployer, must be super owner for scripts to work
+      ] : [],
       chainId: 42,
       gasPrice: 1000000000
     },

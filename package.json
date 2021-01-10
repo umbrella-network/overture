@@ -50,11 +50,12 @@
     "deploy:stage0": "NODE_ENV=development npx hardhat run --network localhost ./scripts/deploy-stage0-auction.ts",
     "deploy:stage0:staging": "NODE_ENV=staging npx hardhat run --network kovan ./scripts/deploy-stage0-auction.ts",
     "deploy:stage1": "NODE_ENV=development npx hardhat run --network localhost ./scripts/deploy-stage1-farming.ts",
+    "deploy:stage1:staging": "NODE_ENV=staging npx hardhat run --network kovan ./scripts/deploy-stage1-farming.ts",
 
     "compile": "npx hardhat compile",
     "node": "npx hardhat node",
     "lint-sol": "solhint \"contracts/**/*.sol\"",
-    "flatten": "npm run flatten:auction && npm run flatten:multi-sig && npm run flatten:umb && npm run flatten:rumb && npm run flatten:staking",
+    "flatten": "rm flattened_* && npm run flatten:auction && npm run flatten:multi-sig && npm run flatten:umb && npm run flatten:rumb && npm run flatten:staking",
     "flatten:auction": "npx truffle-flattener ./contracts/Auction.sol | awk '/SPDX-License-Identifier/&&c++>0 {next} 1' > flattened_Auction.sol",
     "flatten:multi-sig": "npx truffle-flattener ./contracts/UmbMultiSig.sol | awk '/SPDX-License-Identifier/&&c++>0 {next} 1' > flattened_UmbMultiSig.sol",
     "flatten:umb": "npx truffle-flattener ./contracts/UMB.sol | awk '/SPDX-License-Identifier/&&c++>0 {next} 1' > flattened_UMB.sol",

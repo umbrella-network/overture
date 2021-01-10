@@ -14,7 +14,7 @@ export const deployAuction = async (owner: string, token: string | undefined = C
   const constructorTypes = ['address', 'address']
   const constructorArgs = [owner, token]
 
-  console.log('constructor abi, use it to validate contract:')
+  console.log('constructor abi, use it to validate Auction contract:')
   console.log(constructorAbi(constructorTypes, constructorArgs))
 
   return contract;

@@ -22,10 +22,10 @@ contract rUMB is MintableToken, SwappableToken {
   constructor (
     address _multiSig,
     address _initialHolder,
-    uint _initialBalance,
+    uint256 _initialBalance,
     uint256 _maxAllowedTotalSupply,
-    uint _rewardId,
-    uint _swapDuration,
+    uint256 _rewardId,
+    uint256 _swapDuration,
     string memory _name,
     string memory _symbol
   )

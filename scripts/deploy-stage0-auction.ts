@@ -10,13 +10,19 @@ import {
   currentTimestamp,
   getProvider,
   validationMark,
-  waitForTx, wasTxExecuted
+  waitForTx, wasTxExecutedByMultiSig
 } from "./helpers";
 
 const {ethers, getNamedAccounts} = hre;
 
 async function main() {
-  const {deployer, multiSigOwner1} = await getNamedAccounts();
+  const {deployer} = await getNamedAccounts();
+  const multiSigOwnerWallet = (await ethers.getSigners())[<number>hre.config.namedAccounts.deployer];
+
+  if (!multiSigOwnerWallet) {
+    throw Error('multiSigOwnerWallet is not set, check `hardhat.config` and setup .env')
+  }
+
   console.log(`\n\n${'-'.repeat(80)}\nSCRIPT STARTS AT: ${currentTimestamp}\n\n`);
   console.log('ENV:', CONFIG.env);
   console.log('DEPLOYING FROM ADDRESS:', deployer, `\n\n`);
@@ -57,9 +63,7 @@ async function main() {
       throw Error('multiSig contract is not set')
     }
 
-    const multiSigOwnerWallet = (await ethers.getSigners())[<number>hre.config.namedAccounts.multiSigOwner1];
-
-    if ((await multiSig.ownersPowers(multiSigOwner1)).toString() == '0') {
+    if ((await multiSig.ownersPowers(deployer)).toString() == '0') {
       console.log(validationMark())
       console.log('Owner for MultiSig is not set or it is invalid, so you need to mint tokens for Auction via Etherscan')
       return
@@ -72,7 +76,7 @@ async function main() {
       .submitTokenMintTx(umb.address, auction.address, CONFIG.auction.amountOfTokensForAuction)
 
     let txId = checkTxSubmission(multiSig, await waitForTx(tx.hash, provider));
-    await wasTxExecuted(multiSig, txId)
+    await wasTxExecutedByMultiSig(multiSig, txId)
 
     console.log('Balance of auction contract:', (await umb.balanceOf(auction.address)).toString())
   } else {

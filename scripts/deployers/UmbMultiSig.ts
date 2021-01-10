@@ -5,18 +5,21 @@ import {getProvider, validationMark} from "../helpers";
 import {Contract} from "@ethersproject/contracts";
 
 const { ethers, getNamedAccounts } = hre;
+const { BigNumber } = ethers;
 
 export const multiSigContract = async (): Promise<Contract> => {
   if (!CONFIG.multiSig.address) {
     throw Error('CONFIG.multiSig.address is empty')
   }
 
-  const {multiSigOwner1} = await getNamedAccounts();
-  return new ethers.Contract(CONFIG.multiSig.address, UmbMultiSig.abi, getProvider()).connect(multiSigOwner1);
+  return new ethers.Contract(CONFIG.multiSig.address, UmbMultiSig.abi, getProvider());
 }
 
 export const deployUmbMultiSig = async (libStrings: string): Promise<Contract> => {
-  const {owners, powers, requiredPower} = CONFIG.multiSig
+  const {owners, requiredPower} = CONFIG.multiSig
+
+  const addresses = owners.map(data => data.address)
+  const powers = owners.map(data => data.power)
 
   const Contract = await ethers.getContractFactory('UmbMultiSig', {
     libraries: {
@@ -24,19 +27,20 @@ export const deployUmbMultiSig = async (libStrings: string): Promise<Contract> =
     }
   });
 
-  const contract = await Contract.deploy(owners, powers, requiredPower);
+  const contract = await Contract.deploy(addresses, powers, requiredPower);
   await contract.deployed();
   console.log('deployed UmbMultiSig:', contract.address);
 
-  for (let i=0; i < owners.length; i++) {
-    const power = await contract.ownersPowers(owners[i])
-    const check = power.toString() === powers[i].toString(10)
+  owners.forEach((data, i) => {
+    contract.ownersPowers(data.address).then((power: typeof BigNumber) => {
+      const check = power.toString() === data.power.toString(10)
 
-    console.log('check for power', owners[i], power.toString(), '==', powers[i], validationMark(check))
-    if (!check) {
-      throw Error('Oops...')
-    }
-  }
+      console.log('check for power', data.address, power.toString(), '==', data.power, validationMark(check))
+      if (!check) {
+        throw Error('Oops...')
+      }
+    })
+  })
 
   return contract;
 };

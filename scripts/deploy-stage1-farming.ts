@@ -3,7 +3,7 @@ import CONFIG from '../config/config';
 import hre from 'hardhat';
 import {multiSigContract} from "./deployers/UmbMultiSig";
 import {deployLibStrings} from "./deployers/LibStrings";
-import {checkTxSubmission, getProvider, validationMark, waitForTx, wasTxExecuted} from "./helpers";
+import {checkTxSubmission, getProvider, validationMark, waitForTx, wasTxExecutedByMultiSig} from "./helpers";
 import {deployRUMB1} from "./deployers/rUMB";
 import {deployRewards} from "./deployers/Rewards";
 import {deployStakingRewards} from "./deployers/StakingRewards";
@@ -15,8 +15,7 @@ const breakLog = () => console.log(`\n${'-'.repeat(30)}\n\n`)
 
 async function main() {
   const {deployer} = await getNamedAccounts();
-  const multiSigOwnerWallet = (await ethers.getSigners())[<number>hre.config.namedAccounts.multiSigOwner1];
-  const owner = await multiSigOwnerWallet.getAddress()
+  const multiSigOwnerWallet = (await ethers.getSigners())[<number>hre.config.namedAccounts.deployer];
 
   console.log('ENV:', CONFIG.env);
   console.log('DEPLOYING FROM ADDRESS:', deployer);
@@ -29,7 +28,6 @@ async function main() {
 
   const provider = getProvider()
   let multiSig
-
 
   if (!CONFIG.multiSig.address) {
     console.log(validationMark(false))
@@ -60,7 +58,7 @@ async function main() {
       .submitTokenMintTx(rUmb1.address, rewards.address, umbRewardsSum.toString())
 
     let txId = checkTxSubmission(multiSig, await waitForTx(tx.hash, provider));
-    await wasTxExecuted(multiSig, txId)
+    await wasTxExecutedByMultiSig(multiSig, txId)
 
     console.log('Balance of Rewards contract:', (await rUmb1.balanceOf(rewards.address)).toString())
     breakLog();
@@ -73,6 +71,11 @@ async function main() {
       const amounts: string[] = data.map(data => data.amount)
       const durations: number[] = data.map(data => data.duration)
 
+      console.log('participants', participants)
+      console.log('amounts', amounts)
+      console.log('durations', durations)
+      breakLog()
+
       let tx = await multiSig
         .connect(multiSigOwnerWallet)
         .submitRewardsStartDistributionTx(
@@ -81,7 +84,7 @@ async function main() {
 
       let txId = checkTxSubmission(multiSig, await waitForTx(tx.hash, provider));
 
-      if (await wasTxExecuted(multiSig, txId)) {
+      if (await wasTxExecutedByMultiSig(multiSig, txId)) {
         console.log('Distribution started at', (await rewards.distributionStartTime()).toString())
         console.log('Key burned for Rewards contract?', validationMark(await rewards.owner() === ethers.constants.AddressZero))
         console.log('participantsCount valid?', validationMark((await rewards.participantsCount()).toString() === participants.length.toString(10)))
@@ -106,7 +109,7 @@ async function main() {
     .submitTokenMintTx(rUmb1.address, stakingRewards.address, CONFIG.stage1.farming.tokenAmountForDeFiRewards)
 
   let txId = checkTxSubmission(multiSig, await waitForTx(tx.hash, provider));
-  await wasTxExecuted(multiSig, txId)
+  await wasTxExecutedByMultiSig(multiSig, txId)
 
   console.log('Notify StakingRewards about reward amount, MultiSig tx ID:', txId)
 
@@ -116,7 +119,7 @@ async function main() {
 
   txId = checkTxSubmission(multiSig, await waitForTx(tx.hash, provider));
 
-  if (await wasTxExecuted(multiSig, txId)) {
+  if (await wasTxExecutedByMultiSig(multiSig, txId)) {
     console.log(validationMark(true))
     console.log('Balance of StakingRewards contract:', (await rUmb1.balanceOf(stakingRewards.address)).toString())
   } else {
