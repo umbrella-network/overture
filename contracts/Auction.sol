@@ -113,6 +113,8 @@ contract Auction is Owned {
     emit LogReceive(msg.sender, msg.value);
   }
 
+  /**
+   * we decided not allow to withdraw
   function withdraw() external whenAuctionInProgress {
     uint256 ethToWithdraw = balances[msg.sender];
     require(ethToWithdraw > 0, "you didn't lock any eth");
@@ -123,7 +125,7 @@ contract Auction is Owned {
     _sendEth(msg.sender, ethToWithdraw);
 
     emit LogWithdraw(msg.sender, ethToWithdraw);
-  }
+  } // */
 
   function claim() external whenAuctionOver {
     (uint256 ethBalance, uint256 umbShares) = umbFor(msg.sender);
