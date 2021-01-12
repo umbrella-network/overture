@@ -85,9 +85,9 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
   // ========== MUTATIVE FUNCTIONS ========== //
 
   function stake(uint256 amount) override external nonReentrant notPaused updateReward(msg.sender) {
-    require(periodFinish == 0, "Stake period not started yet");
-
+    require(periodFinish > 0, "Stake period not started yet");
     require(amount > 0, "Cannot stake 0");
+    
     _totalSupply = _totalSupply.add(amount);
     _balances[msg.sender] = _balances[msg.sender].add(amount);
     stakingToken.safeTransferFrom(msg.sender, address(this), amount);
