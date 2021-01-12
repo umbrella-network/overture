@@ -105,6 +105,7 @@ contract Auction is Owned {
 
   receive() external payable {
     require(auctionEndsAt > 0, "The auction has not started yet");
+    require(totalEthLocked < maximumLockedEth, "Limit is reached, all tokens sold.");
     require(auctionEndsAt >= block.timestamp, "The auction has already ended");
 
     totalEthLocked = totalEthLocked.add(msg.value);
