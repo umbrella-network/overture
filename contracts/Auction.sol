@@ -89,7 +89,8 @@ contract Auction is Owned {
       return (ethBalance, umbShares);
     }
 
-    umbShares = ethBalance.div(tokenPrice());
+    uint price = tokenPrice();
+    umbShares = price == 0 ? 0 : ethBalance.div(price);
   }
 
   function wasAuctionSuccessful() public view returns (bool) {
@@ -101,7 +102,8 @@ contract Auction is Owned {
   }
 
   function unsoldUMB() public view returns (uint256) {
-    return totalUMBOnSale - totalEthLocked.div(tokenPrice());
+    uint price = tokenPrice();
+    return price == 0 ? totalUMBOnSale : totalUMBOnSale - totalEthLocked.div(price);
   }
 
   // ========== MUTATIVE FUNCTIONS ========== //

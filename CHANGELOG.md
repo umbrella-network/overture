@@ -23,3 +23,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   It is fixed, but we should take a second look on this. It's marked with `@todo`
 - Fix invalid requirements about participants count in `Rewards.startDistribution()`
 - quick fix for missing `ERC20.burn()` during `StakingRewards` compilation
+- calculation for token price and unsold umb
