@@ -24,12 +24,15 @@ contract Auction is Owned {
 
   mapping(address => uint) public balances;
 
+  bool demo;
+
   // ========== CONSTRUCTOR ========== //
 
-  constructor(address _owner, address _umb) Owned(_owner) {
+  constructor(address _owner, address _umb, bool _demo) Owned(_owner) {
     require(address(_umb) != address(0x0), "ump address is empty");
 
     UMB = _umb;
+    demo = _demo;
   }
 
   // ========== MODIFIERS ========== //
@@ -161,8 +164,9 @@ contract Auction is Owned {
     maximumLockedEth = _maximumLockedEth;
   }
 
-  // @TODO THIS IS ONLY FOR DEMO!!
   function stop() external {
+    require(demo, "THIS IS ONLY FOR DEMO CONTRACT!!");
+
     auctionEndsAt = block.timestamp;
   }
 

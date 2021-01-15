@@ -3,7 +3,13 @@
 
 ![Umbrella network - logo](./umb.network-logo.png)
 
-DeFi farming smart contracts that follows 
+This repo includes token smart contract (main UMB and rewards rUMB) 
+as well as distribution strategies for:
+- auction
+- DeFi farming
+- linear vesting
+
+DeFi farming and token distribution smart contracts that follows 
 [A Proposal for the UMB Token Staking, Rewards and Distribution](
 https://medium.com/umbrella-network/a-proposal-for-the-umb-token-staking-rewards-and-distribution-34e3f3499433
 ).

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - scripts to deploy stage 1: DeFi farming
 - stop method for farming
 - initial config for launch
+- flag for demo contract, that allows us to stop auction
 
 ### Changed
 - merge `BurnableToken` and `MaxAllowedSupply` into `MintableToken`
