@@ -15,7 +15,7 @@ contract Auction is Owned {
 
   uint public auctionEndsAt;
   uint public totalEthLocked = 0;
-  uint minimalEthPricePerToken = 0;
+  uint public minimalEthPricePerToken = 0;
   uint public totalUMBOnSale;
   uint public minimalRequiredLockedEth;
   uint public maximumLockedEth;
@@ -102,8 +102,11 @@ contract Auction is Owned {
   }
 
   function unsoldUMB() public view returns (uint256) {
-    uint price = tokenPrice();
-    return price == 0 ? totalUMBOnSale : totalUMBOnSale - totalEthLocked.div(price);
+    if (!wasAuctionSuccessful()) {
+      return totalUMBOnSale;
+    }
+
+    return totalUMBOnSale - totalEthLocked.div(tokenPrice());
   }
 
   // ========== MUTATIVE FUNCTIONS ========== //
