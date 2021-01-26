@@ -36,7 +36,7 @@ export type ConfigType = {
     maxAllowedTotalSupply: string
   },
   auction: {
-    address?: string,
+    address: string,
     amountOfTokensForAuction: string
   },
   stage1: {
@@ -85,7 +85,7 @@ const envConfig: Record<string, ConfigType> = {
       initialHolder: ethers.constants.AddressZero
     },
     auction: {
-      // address: '0x038B86d9d8FAFdd0a02ebd1A476432877b0107C8',
+      address: ethers.constants.AddressZero,
       amountOfTokensForAuction: toWei('50000000', 'ether')
     },
     stage1: {
@@ -203,6 +203,7 @@ const envConfig: Record<string, ConfigType> = {
       initialHolder: ethers.constants.AddressZero
     },
     auction: {
+      address: ethers.constants.AddressZero,
       amountOfTokensForAuction: toWei('50000000', 'ether') //they will go directly to auction contract
     },
     stage1: {
