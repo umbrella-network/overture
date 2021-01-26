@@ -20,7 +20,7 @@ async function main() {
   const multiSigOwnerWallet = (await ethers.getSigners())[<number>hre.config.namedAccounts.deployer];
 
   if (!multiSigOwnerWallet) {
-    throw Error('multiSigOwnerWallet is not set, check `hardhat.config` and setup .env')
+    throw Error('multiSigOwnerWallet is not set, check `hardhat.config` and setup .env');
   }
 
   console.log(`\n\n${'-'.repeat(80)}\nSCRIPT STARTS AT: ${currentTimestamp}\n\n`);
@@ -28,57 +28,57 @@ async function main() {
   console.log('DEPLOYING FROM ADDRESS:', deployer, `\n\n`);
 
   if (CONFIG.auction.address) {
-    console.log(validationMark())
+    console.log(validationMark());
     console.log('AUCTION IS ALREADY DEPLOYED under', CONFIG.auction.address);
     console.log('if you want to redeploy, delete its address from config file');
-    return
+    return;
   }
 
   if (CONFIG.UMB.address) {
-    console.log(validationMark())
+    console.log(validationMark());
     console.log('UMB IS ALREADY DEPLOYED under', CONFIG.UMB.address);
     console.log('if you want to redeploy stage 0, delete its address from config file');
-    return
+    return;
   }
 
-  const provider = getProvider()
-  let multiSig
+  const provider = getProvider();
+  let multiSig;
 
   if (!CONFIG.multiSig.address) {
     const libStrings = CONFIG.libs.strings || (await deployLibStrings()).address;
     multiSig = await deployUmbMultiSig(libStrings);
   } else {
     console.log('MultiSig address is already set');
-    multiSig = await multiSigContract()
+    multiSig = await multiSigContract();
   }
 
-  const umb = await deployUMB(multiSig.address)
+  const umb = await deployUMB(multiSig.address);
   const auction = await deployAuction(multiSig.address, umb.address);
 
   console.log('TOKEN for auction:', umb.address);
 
   if (CONFIG.auction.amountOfTokensForAuction) {
     if (!multiSig) {
-      console.log(validationMark())
-      throw Error('multiSig contract is not set')
+      console.log(validationMark());
+      throw Error('multiSig contract is not set');
     }
 
-    if ((await multiSig.ownersPowers(deployer)).toString() == '0') {
-      console.log(validationMark())
-      console.log('Owner for MultiSig is not set or it is invalid, so you need to mint tokens for Auction via Etherscan')
-      return
+    if ((await multiSig.ownersPowers(deployer)).toString() === '0') {
+      console.log(validationMark());
+      console.log('Owner for MultiSig is not set or it is invalid, so you need to mint tokens for Auction via Etherscan');
+      return;
     }
 
     console.log(`\nMinting tokens for auction...\n`);
 
     const tx = await multiSig
       .connect(multiSigOwnerWallet)
-      .submitTokenMintTx(umb.address, auction.address, CONFIG.auction.amountOfTokensForAuction)
+      .submitTokenMintTx(umb.address, auction.address, CONFIG.auction.amountOfTokensForAuction);
 
     let txId = checkTxSubmission(multiSig, await waitForTx(tx.hash, provider));
-    await wasTxExecutedByMultiSig(multiSig, txId)
+    await wasTxExecutedByMultiSig(multiSig, txId);
 
-    console.log('Balance of auction contract:', (await umb.balanceOf(auction.address)).toString())
+    console.log('Balance of auction contract:', (await umb.balanceOf(auction.address)).toString());
   } else {
     console.log('`CONFIG.auction.amountOfTokensForAuction` is empty, so script did not mint tokens for auction - do it via Etherscan');
   }
@@ -87,7 +87,7 @@ async function main() {
 main()
   .then(() => {
     console.log(`\n\nDONE.\n${'='.repeat(80)}\n`);
-    process.exit(0)
+    process.exit(0);
   })
   .catch(error => {
     console.error(error);

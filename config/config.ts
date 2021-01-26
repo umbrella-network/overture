@@ -3,59 +3,59 @@ import hre from 'hardhat';
 import {currentTimestamp, oneMonth, oneYear} from "../scripts/helpers";
 
 const env = process.env.NODE_ENV || 'development';
-const {toWei} = hre.web3.utils
+const {toWei} = hre.web3.utils;
 console.log('env', env);
 
-const dummyAddress = (n: string | number) => `0x${n.toString().padStart(40, '0')}`
+const dummyAddress = (n: string | number) => `0x${n.toString().padStart(40, '0')}`;
 
 export type RewardsData = {
-  participant: string
-  amount: string
+  participant: string,
+  amount: string,
   duration: number
 }
 
 export type ConfigType = {
-  env: string
+  env: string,
   contractRegistry: {
     address?: string
   },
   libs: {
     strings?: string
-  }
+  },
   multiSig: {
     address?: string,
     owners: { address: string, power: number }[],
     requiredPower: number
   },
   UMB: {
-    address?: string
-    name: string
+    address?: string,
+    name: string,
     symbol: string,
-    initialHolder: string
-    initialBalance: string  // eg. for liquidity provider
+    initialHolder: string,
+    initialBalance: string,  // eg. for liquidity provider
     maxAllowedTotalSupply: string
   },
   auction: {
-    address?: string
+    address?: string,
     amountOfTokensForAuction: string
   },
   stage1: {
     rUmb: {
-      address?: string
+      address?: string,
       rewardId: number,
-      initialHolder: string
-      initialBalance: string
-      maxAllowedTotalSupply: string
+      initialHolder: string,
+      initialBalance: string,
+      maxAllowedTotalSupply: string,
       swapDuration: number
-    }
+    },
     farming: {
       address?: string,
-      rewardsDistribution?: string   // default is MultiSig
+      rewardsDistribution?: string,   // default is MultiSig
       tokenAmountForDeFiRewards: string
     },
     umbRewards: {
-      address?: string
-      startTime: number
+      address?: string,
+      startTime: number,
       data: RewardsData[]
     }
   },
@@ -251,4 +251,4 @@ const envConfig: Record<string, ConfigType> = {
   }
 };
 
-export default <ConfigType>envConfig[env];
+export default envConfig[env];

@@ -18,17 +18,17 @@ jobs:
   include:
       - stage: tests
         name: "Unit tests"
-        script: npx hardhat test
+        script: npm run test
 
       - stage: tests
         name: "Solidity Lint"
-        script: npx hardhat check
+        script: npm run lint:sol
 
       - stage: tests
         name: "JS Lint"
-        script: npx eslint .
+        script: npm run lint
 
       - stage: coverage
         name: "Solidity Test Coverage"
-        if: branch = main
+        if: branch = develop
         script: npm run coveralls

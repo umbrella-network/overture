@@ -8,16 +8,16 @@ const { ethers, getNamedAccounts } = hre;
 
 export const UmbContract = async (address: string | undefined = CONFIG.UMB.address): Promise<Contract> => {
   if (!address) {
-    throw Error('UMB address is empty')
+    throw Error('UMB address is empty');
   }
 
   const {deployer} = await getNamedAccounts();
   return new ethers.Contract(address, Umb.abi, getProvider()).connect(deployer);
-}
+};
 
 export const deployUMB = async (owner: string) => {
   const Contract = await ethers.getContractFactory('UMB');
-  const {initialHolder, initialBalance, maxAllowedTotalSupply, name, symbol} = CONFIG.UMB
+  const {initialHolder, initialBalance, maxAllowedTotalSupply, name, symbol} = CONFIG.UMB;
 
   const constructorTypes = [
     'address',
@@ -41,7 +41,7 @@ export const deployUMB = async (owner: string) => {
 
   await contract.deployed();
   console.log('deployed UMB:', contract.address);
-  console.log('constructor abi, use it to validate UMB contract:')
-  console.log(constructorAbi(constructorTypes, constructorArgs))
+  console.log('constructor abi, use it to validate UMB contract:');
+  console.log(constructorAbi(constructorTypes, constructorArgs));
   return contract;
 };
