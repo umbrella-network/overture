@@ -12,7 +12,7 @@ export const deployRUMB1 = async (owner: string, libStrings: string) => {
     }
   });
 
-  const {stage1} = CONFIG
+  const {stage1} = CONFIG;
 
   const constructorTypes = [
     'address',
@@ -34,7 +34,7 @@ export const deployRUMB1 = async (owner: string, libStrings: string) => {
      stage1.rUmb.swapDuration,
      CONFIG.UMB.name,
      CONFIG.UMB.symbol,
-   ]
+   ];
 
   const contract = await Contract.deploy(...constructorArgs);
 
@@ -43,8 +43,8 @@ export const deployRUMB1 = async (owner: string, libStrings: string) => {
   console.log('________name:', await contract.name());
   console.log('______symbol:', await contract.symbol());
 
-  console.log('constructor abi, use it to validate', contractName, 'contract:')
-  console.log(constructorAbi(constructorTypes, constructorArgs))
+  console.log('constructor abi, use it to validate', contractName, 'contract:');
+  console.log(constructorAbi(constructorTypes, constructorArgs));
 
   return contract;
 };

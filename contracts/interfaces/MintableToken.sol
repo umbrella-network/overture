@@ -13,44 +13,44 @@ import "../interfaces/IBurnableToken.sol";
 /// @notice  This contract allows to mint tokens and burn key (renounceOwnership)
 /// @dev     Can be use used with MultiSig as owner
 abstract contract MintableToken is Owned, ERC20, IBurnableToken {
-  using SafeMath for uint256;
+    using SafeMath for uint256;
 
-  // ========== STATE VARIABLES ========== //
+    // ========== STATE VARIABLES ========== //
 
-  uint256 public maxAllowedTotalSupply;
+    uint256 public maxAllowedTotalSupply;
 
-  // ========== CONSTRUCTOR ========== //
+    // ========== CONSTRUCTOR ========== //
 
-  constructor (uint256 _maxAllowedTotalSupply) {
-    require(_maxAllowedTotalSupply != 0, "_maxAllowedTotalSupply is empty");
-    maxAllowedTotalSupply = _maxAllowedTotalSupply;
-  }
+    constructor (uint256 _maxAllowedTotalSupply) {
+        require(_maxAllowedTotalSupply != 0, "_maxAllowedTotalSupply is empty");
+        maxAllowedTotalSupply = _maxAllowedTotalSupply;
+    }
 
-  // ========== MODIFIERS ========== //
+    // ========== MODIFIERS ========== //
 
-  modifier assertMaxSupply(uint256 _amountToMint) {
-    require(totalSupply().add(_amountToMint) <= maxAllowedTotalSupply, "total supply limit exceeded");
-    _;
-  }
+    modifier assertMaxSupply(uint256 _amountToMint) {
+        require(totalSupply().add(_amountToMint) <= maxAllowedTotalSupply, "total supply limit exceeded");
+        _;
+    }
 
-  // ========== MUTATIVE FUNCTIONS ========== //
+    // ========== MUTATIVE FUNCTIONS ========== //
 
-  function burn(uint256 _amount) override external {
-    uint balance = balanceOf(msg.sender);
-    require(_amount <= balance, "not enough tokens to burn");
+    function burn(uint256 _amount) override external {
+        uint balance = balanceOf(msg.sender);
+        require(_amount <= balance, "not enough tokens to burn");
 
-    _burn(msg.sender, _amount);
-    maxAllowedTotalSupply = maxAllowedTotalSupply - _amount;
-  }
+        _burn(msg.sender, _amount);
+        maxAllowedTotalSupply = maxAllowedTotalSupply - _amount;
+    }
 
-  // ========== RESTRICTED FUNCTIONS ========== //
+    // ========== RESTRICTED FUNCTIONS ========== //
 
-  function mint(address _holder, uint256 _amount)
-  external
-  onlyOwner()
-  assertMaxSupply(_amount) {
-    require(_amount > 0, "zero amount");
+    function mint(address _holder, uint256 _amount)
+    external
+    onlyOwner()
+    assertMaxSupply(_amount) {
+        require(_amount > 0, "zero amount");
 
-    _mint(_holder, _amount);
-  }
+        _mint(_holder, _amount);
+    }
 }

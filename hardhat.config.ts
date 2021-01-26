@@ -1,24 +1,25 @@
-require('custom-env').env(true)
+require('custom-env').env(true);
 
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-web3";
 import "@nomiclabs/hardhat-solhint";
+import "solidity-coverage";
 
 import 'hardhat-deploy';
 import 'hardhat-deploy-ethers';
 import 'hardhat-gas-reporter';
 
+import {HardhatUserConfig} from 'hardhat/types';
+
 const { INFURA_ID, DEPLOYER_PK } = process.env;
 
-const balance = '1000' + '0'.repeat(18)
+const balance = '1000' + '0'.repeat(18);
+
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
 
-/**
- * @type import('hardhat/config').HardhatUserConfig
- */
-module.exports = {
+const config: HardhatUserConfig = {
   namedAccounts: {
     deployer: 0,
     multiSigOwner1: 1
@@ -61,7 +62,9 @@ module.exports = {
   },
   gasReporter: {
     gasPrice: 1,
-    currency: 'USD'
+    currency: 'USD',
+    enabled: !!process.env.REPORT_GAS,
+    maxMethodDiff: 10,
   },
   paths: {
     sources: './contracts',
@@ -76,3 +79,6 @@ module.exports = {
     ]
   },
 };
+
+
+export default config;

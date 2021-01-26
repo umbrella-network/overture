@@ -11,11 +11,11 @@ export const deployAuction = async (owner: string, token: string | undefined = C
 
   console.log('Auction:', contract.address);
 
-  const constructorTypes = ['address', 'address']
-  const constructorArgs = [owner, token]
+  const constructorTypes = ['address', 'address'];
+  const constructorArgs = [owner, token];
 
-  console.log('constructor abi, use it to validate Auction contract:')
-  console.log(constructorAbi(constructorTypes, constructorArgs))
+  console.log('constructor abi, use it to validate Auction contract:');
+  console.log(constructorAbi(constructorTypes, constructorArgs));
 
   return contract;
 };

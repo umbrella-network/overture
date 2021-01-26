@@ -11,7 +11,7 @@ interface IStakingRewards {
     function getReward() external;
 
     function exit() external;
-  // Views
+    // Views
     function lastTimeRewardApplicable() external view returns (uint256);
 
     function rewardPerToken() external view returns (uint256);

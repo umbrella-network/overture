@@ -18,94 +18,94 @@ import "./interfaces/Owned.sol";
 ///          Then as owner call .startDistribution() - this will set everything
 ///          and it will burn owner key.
 contract Rewards is Owned {
-  using SafeMath for uint256;
-  using SafeERC20 for ERC20;
+    using SafeMath for uint256;
+    using SafeERC20 for ERC20;
 
-  ERC20 public rewardToken;
+    ERC20 public rewardToken;
 
-  uint public distributionStartTime;
-  mapping (address => Reward) rewards;
-  address[] public participants;
+    uint public distributionStartTime;
+    mapping(address => Reward) public rewards;
+    address[] public participants;
 
-  struct Reward {
-    uint total;
-    uint duration;
-    uint paid;
-  }
-
-  // ========== CONSTRUCTOR ========== //
-
-  constructor(address _owner) Owned(_owner) {
-  }
-
-  // ========== VIEWS ========== //
-
-  function participantsCount() public view returns (uint) {
-    return participants.length;
-  }
-
-  function balanceOf(address _address) public view returns (uint) {
-    uint start = distributionStartTime;
-
-    if (block.timestamp < start) {
-      return 0;
+    struct Reward {
+        uint total;
+        uint duration;
+        uint paid;
     }
 
-    Reward memory reward = rewards[_address];
+    // ========== CONSTRUCTOR ========== //
 
-    if (block.timestamp >= start.add(reward.duration)) {
-      return reward.total.sub(reward.paid);
+    constructor(address _owner) Owned(_owner) {
     }
 
-    return reward.total.mul(block.timestamp.sub(start)).div(reward.duration).sub(reward.paid);
-  }
+    // ========== VIEWS ========== //
 
-  // ========== MUTATIVE FUNCTIONS ========== //
-
-  function claim() external {
-    uint balance = balanceOf(_msgSender());
-    require(balance != 0, "you have no tokens to claim");
-
-    rewards[_msgSender()].paid = rewards[_msgSender()].paid.add(balance);
-    rewardToken.safeTransfer(_msgSender(), balance);
-
-    emit LogClaimed(_msgSender(), balance);
-  }
-
-  // ========== RESTRICTED FUNCTIONS ========== //
-
-  function startDistribution(
-    ERC20 _rewardToken,
-    uint _startTime,
-    address[] calldata _participants,
-    uint[] calldata _rewards,
-    uint[] calldata _durations
-  )
-  external onlyOwner {
-    require(_participants.length != 0, "there is no _participants");
-    require(_participants.length == _rewards.length, "_participants count must match _rewards count");
-    require(_participants.length == _durations.length, "_participants count must match _durations count");
-    require(_startTime != 0, "start time is empty");
-
-    distributionStartTime = _startTime;
-    uint sum = 0;
-
-    for (uint i=0; i < _participants.length; i++) {
-      rewards[_participants[i]] = Reward(_rewards[i], _durations[i], 0);
-      sum = sum.add(_rewards[i]);
+    function participantsCount() public view returns (uint) {
+        return participants.length;
     }
 
-    require(_rewardToken.balanceOf(address(this)) >= sum, "not enough tokens for rewards");
+    function balanceOf(address _address) public view returns (uint) {
+        uint start = distributionStartTime;
 
-    rewardToken = _rewardToken;
-    participants = _participants;
+        if (block.timestamp < start) {
+            return 0;
+        }
 
-    renounceOwnership();
-    emit LogBurnKey();
-  }
+        Reward memory reward = rewards[_address];
 
-  // ========== EVENTS ========== //
+        if (block.timestamp >= start.add(reward.duration)) {
+            return reward.total.sub(reward.paid);
+        }
 
-  event LogClaimed(address indexed recipient, uint amount);
-  event LogBurnKey();
+        return reward.total.mul(block.timestamp.sub(start)).div(reward.duration).sub(reward.paid);
+    }
+
+    // ========== MUTATIVE FUNCTIONS ========== //
+
+    function claim() external {
+        uint balance = balanceOf(_msgSender());
+        require(balance != 0, "you have no tokens to claim");
+
+        rewards[_msgSender()].paid = rewards[_msgSender()].paid.add(balance);
+        rewardToken.safeTransfer(_msgSender(), balance);
+
+        emit LogClaimed(_msgSender(), balance);
+    }
+
+    // ========== RESTRICTED FUNCTIONS ========== //
+
+    function startDistribution(
+        ERC20 _rewardToken,
+        uint _startTime,
+        address[] calldata _participants,
+        uint[] calldata _rewards,
+        uint[] calldata _durations
+    )
+    external onlyOwner {
+        require(_participants.length != 0, "there is no _participants");
+        require(_participants.length == _rewards.length, "_participants count must match _rewards count");
+        require(_participants.length == _durations.length, "_participants count must match _durations count");
+        require(_startTime != 0, "start time is empty");
+
+        distributionStartTime = _startTime;
+        uint sum = 0;
+
+        for (uint i = 0; i < _participants.length; i++) {
+            rewards[_participants[i]] = Reward(_rewards[i], _durations[i], 0);
+            sum = sum.add(_rewards[i]);
+        }
+
+        require(_rewardToken.balanceOf(address(this)) >= sum, "not enough tokens for rewards");
+
+        rewardToken = _rewardToken;
+        participants = _participants;
+
+        renounceOwnership();
+        emit LogBurnKey();
+    }
+
+    // ========== EVENTS ========== //
+
+    event LogClaimed(address indexed recipient, uint amount);
+    event LogBurnKey();
 }

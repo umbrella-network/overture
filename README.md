@@ -1,7 +1,7 @@
 # Overture
 
 
-![Umbrella network - logo](./umb.network-logo.png)
+![Umbrella network - logo](./assets/umb.network-logo.png)
 
 This repo includes token smart contract (main UMB and rewards rUMB) 
 as well as distribution strategies for:

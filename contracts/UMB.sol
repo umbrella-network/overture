@@ -21,57 +21,57 @@ import "./interfaces/ISwapReceiver.sol";
 ///          so nobody can mint anymore.
 ///          It has limit for max total supply, so we need to make sure, total amount of rUMBs fit this limit.
 contract UMB is MintableToken, ISwapReceiver {
-  using SafeMath for uint256;
+    using SafeMath for uint256;
 
-  // ========== STATE VARIABLES ========== //
+    // ========== STATE VARIABLES ========== //
 
-  mapping (address => bool) rewardsTokens;
+    mapping(address => bool) rewardsTokens;
 
-  // ========== CONSTRUCTOR ========== //
+    // ========== CONSTRUCTOR ========== //
 
-  constructor (
-    address _multiSig,
-    address _initialHolder,
-    uint _initialBalance,
-    uint256 _maxAllowedTotalSupply,
-    string memory _name,
-    string memory _symbol
-  )
-  Owned(_multiSig)
-  ERC20(_name, _symbol)
-  MintableToken(_maxAllowedTotalSupply) {
-    if (_initialHolder != address(0) && _initialBalance != 0) {
-      _mint(_initialHolder, _initialBalance);
-    }
-  }
-
-  // ========== MODIFIERS ========== //
-
-  // ========== MUTATIVE FUNCTIONS ========== //
-
-  // ========== PRIVATE / INTERNAL ========== //
-
-  // ========== RESTRICTED FUNCTIONS ========== //
-
-  function setRewardTokens(address[] memory _tokens, bool[] calldata _statuses)
-  external
-  onlyOwner {
-    require(_tokens.length == _statuses.length, "please pass same number of tokens and statuses");
-
-    for (uint i = 0; i < _tokens.length; i++) {
-      rewardsTokens[_tokens[i]] = _statuses[i];
+    constructor (
+        address _multiSig,
+        address _initialHolder,
+        uint _initialBalance,
+        uint256 _maxAllowedTotalSupply,
+        string memory _name,
+        string memory _symbol
+    )
+    Owned(_multiSig)
+    ERC20(_name, _symbol)
+    MintableToken(_maxAllowedTotalSupply) {
+        if (_initialHolder != address(0) && _initialBalance != 0) {
+            _mint(_initialHolder, _initialBalance);
+        }
     }
 
-    emit LogSetRewardTokens(_tokens, _statuses);
-  }
+    // ========== MODIFIERS ========== //
 
-  function swapMint(address _holder, uint256 _amount) external override assertMaxSupply(_amount) {
-    require(rewardsTokens[_msgSender()], "only reward token can be swapped");
+    // ========== MUTATIVE FUNCTIONS ========== //
 
-    _mint(_holder, _amount);
-  }
+    // ========== PRIVATE / INTERNAL ========== //
 
-  // ========== EVENTS ========== //
+    // ========== RESTRICTED FUNCTIONS ========== //
 
-  event LogSetRewardTokens(address[] tokens, bool[] statuses);
+    function setRewardTokens(address[] memory _tokens, bool[] calldata _statuses)
+    external
+    onlyOwner {
+        require(_tokens.length == _statuses.length, "please pass same number of tokens and statuses");
+
+        for (uint i = 0; i < _tokens.length; i++) {
+            rewardsTokens[_tokens[i]] = _statuses[i];
+        }
+
+        emit LogSetRewardTokens(_tokens, _statuses);
+    }
+
+    function swapMint(address _holder, uint256 _amount) external override assertMaxSupply(_amount) {
+        require(rewardsTokens[_msgSender()], "only reward token can be swapped");
+
+        _mint(_holder, _amount);
+    }
+
+    // ========== EVENTS ========== //
+
+    event LogSetRewardTokens(address[] tokens, bool[] statuses);
 }
