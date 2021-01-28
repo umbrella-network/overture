@@ -3,7 +3,6 @@ import CONFIG from '../config/config';
 import hre from 'hardhat';
 import {deployUmbMultiSig, multiSigContract} from "./deployers/UmbMultiSig";
 import {deployLibStrings} from "./deployers/LibStrings";
-import {deployAuction} from "./deployers/Auction";
 import {deployUMB} from "./deployers/UMB";
 import {
   checkTxSubmission,
@@ -27,10 +26,9 @@ async function main() {
   console.log('ENV:', CONFIG.env);
   console.log('DEPLOYING FROM ADDRESS:', deployer, `\n\n`);
 
-  if (CONFIG.auction.address) {
+  if (!CONFIG.auction.address) {
     console.log(validationMark());
-    console.log('AUCTION IS ALREADY DEPLOYED under', CONFIG.auction.address);
-    console.log('if you want to redeploy, delete its address from config file');
+    console.log('MISSING POLKASTARTER WALLET');
     return;
   }
 
@@ -53,7 +51,6 @@ async function main() {
   }
 
   const umb = await deployUMB(multiSig.address);
-  const auction = await deployAuction(multiSig.address, umb.address);
 
   console.log('TOKEN for auction:', umb.address);
 
@@ -73,12 +70,12 @@ async function main() {
 
     const tx = await multiSig
       .connect(multiSigOwnerWallet)
-      .submitTokenMintTx(umb.address, auction.address, CONFIG.auction.amountOfTokensForAuction);
+      .submitTokenMintTx(umb.address, CONFIG.auction.address, CONFIG.auction.amountOfTokensForAuction);
 
     let txId = checkTxSubmission(multiSig, await waitForTx(tx.hash, provider));
     await wasTxExecutedByMultiSig(multiSig, txId);
 
-    console.log('Balance of auction contract:', (await umb.balanceOf(auction.address)).toString());
+    console.log('Balance of auction contract:', (await umb.balanceOf(CONFIG.auction.address)).toString());
   } else {
     console.log('`CONFIG.auction.amountOfTokensForAuction` is empty, so script did not mint tokens for auction - do it via Etherscan');
   }
