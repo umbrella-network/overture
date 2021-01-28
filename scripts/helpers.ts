@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import hre from 'hardhat';
-import {Contract} from "@ethersproject/contracts";
+import {Contract} from '@ethersproject/contracts';
 import {Log, Provider, TransactionReceipt} from '@ethersproject/providers';
-import CONFIG from "../config/config";
+import CONFIG from '../config/config';
 
 const {INFURA_ID} = process.env;
 const {ethers, getNamedAccounts} = hre;

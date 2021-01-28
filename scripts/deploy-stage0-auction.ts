@@ -1,16 +1,16 @@
 import CONFIG from '../config/config';
 
 import hre from 'hardhat';
-import {deployUmbMultiSig, multiSigContract} from "./deployers/UmbMultiSig";
-import {deployLibStrings} from "./deployers/LibStrings";
-import {deployUMB} from "./deployers/UMB";
+import {deployUmbMultiSig, multiSigContract} from './deployers/UmbMultiSig';
+import {deployLibStrings} from './deployers/LibStrings';
+import {deployUMB} from './deployers/UMB';
 import {
   checkTxSubmission,
   currentTimestamp,
   getProvider,
   validationMark,
   waitForTx, wasTxExecutedByMultiSig
-} from "./helpers";
+} from './helpers';
 
 const {ethers, getNamedAccounts} = hre;
 
@@ -24,7 +24,7 @@ async function main() {
 
   console.log(`\n\n${'-'.repeat(80)}\nSCRIPT STARTS AT: ${currentTimestamp}\n\n`);
   console.log('ENV:', CONFIG.env);
-  console.log('DEPLOYING FROM ADDRESS:', deployer, `\n\n`);
+  console.log('DEPLOYING FROM ADDRESS:', deployer, '\n\n');
 
   if (!CONFIG.auction.address) {
     console.log(validationMark());
@@ -66,13 +66,13 @@ async function main() {
       return;
     }
 
-    console.log(`\nMinting tokens for auction...\n`);
+    console.log('\nMinting tokens for auction...\n');
 
     const tx = await multiSig
       .connect(multiSigOwnerWallet)
       .submitTokenMintTx(umb.address, CONFIG.auction.address, CONFIG.auction.amountOfTokensForAuction);
 
-    let txId = checkTxSubmission(multiSig, await waitForTx(tx.hash, provider));
+    const txId = checkTxSubmission(multiSig, await waitForTx(tx.hash, provider));
     await wasTxExecutedByMultiSig(multiSig, txId);
 
     console.log('Balance of auction contract:', (await umb.balanceOf(CONFIG.auction.address)).toString());
