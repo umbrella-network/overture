@@ -1,8 +1,8 @@
 import CONFIG from '../../config/config';
 import hre from 'hardhat';
-import UmbMultiSig from "../../artifacts/contracts/UmbMultiSig.sol/UmbMultiSig.json";
-import {getProvider, validationMark} from "../helpers";
-import {Contract} from "@ethersproject/contracts";
+import UmbMultiSig from '../../artifacts/contracts/UmbMultiSig.sol/UmbMultiSig.json';
+import {getProvider, validationMark} from '../helpers';
+import {Contract} from '@ethersproject/contracts';
 
 const { ethers } = hre;
 const { BigNumber } = ethers;

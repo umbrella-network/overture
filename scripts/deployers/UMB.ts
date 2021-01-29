@@ -1,8 +1,8 @@
 import CONFIG from '../../config/config';
 import hre from 'hardhat';
-import {Contract} from "@ethersproject/contracts";
-import Umb from "../../artifacts/contracts/UMB.sol/UMB.json";
-import {constructorAbi, getProvider} from "../helpers";
+import {Contract} from '@ethersproject/contracts';
+import Umb from '../../artifacts/contracts/UMB.sol/UMB.json';
+import {constructorAbi, getProvider} from '../helpers';
 
 const { ethers, getNamedAccounts } = hre;
 

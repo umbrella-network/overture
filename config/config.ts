@@ -1,6 +1,6 @@
-import {ethers} from "ethers";
+import {ethers} from 'ethers';
 import hre from 'hardhat';
-import {currentTimestamp, oneMonth, oneYear} from "../scripts/helpers";
+import {currentTimestamp, oneMonth, oneYear} from '../scripts/helpers';
 
 const env = process.env.NODE_ENV || 'development';
 const {toWei} = hre.web3.utils;

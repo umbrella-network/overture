@@ -1,6 +1,6 @@
 import CONFIG from '../../config/config';
 import hre from 'hardhat';
-import {constructorAbi} from "../helpers";
+import {constructorAbi} from '../helpers';
 
 const { ethers } = hre;
 

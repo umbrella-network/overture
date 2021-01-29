@@ -1,18 +1,18 @@
 import hre from 'hardhat';
 
 import CONFIG from '../config/config';
-import {multiSigContract} from "./deployers/UmbMultiSig";
-import {deployLibStrings} from "./deployers/LibStrings";
+import {multiSigContract} from './deployers/UmbMultiSig';
+import {deployLibStrings} from './deployers/LibStrings';
 import {
   checkTxSubmission,
   getProvider,
   validationMark,
   waitForTx,
   wasTxExecutedByMultiSig
-} from "./helpers";
-import {deployRUMB1} from "./deployers/rUMB";
-import {deployRewards} from "./deployers/Rewards";
-import {deployStakingRewards} from "./deployers/StakingRewards";
+} from './helpers';
+import {deployRUMB1} from './deployers/rUMB';
+import {deployRewards} from './deployers/Rewards';
+import {deployStakingRewards} from './deployers/StakingRewards';
 
 const {ethers, getNamedAccounts} = hre;
 const {BigNumber} = ethers;
@@ -48,7 +48,7 @@ const main = async () => {
   const rewards = await deployRewards(multiSig.address);
 
   breakLog();
-  console.log(`Minting rewards for individual vesting...`);
+  console.log('Minting rewards for individual vesting...');
 
   const umbRewardsSum = CONFIG.stage1.umbRewards.data.reduce(
     (acc, data) => acc.add(BigNumber.from(data.amount)), BigNumber.from(0)
@@ -59,11 +59,11 @@ const main = async () => {
   if (umbRewardsSum.gt(0)) {
     console.log('> total reward amount to mint:', umbRewardsSum.toString(), 'rUMB1');
 
-    let tx = await multiSig
+    const tx = await multiSig
       .connect(multiSigOwnerWallet)
       .submitTokenMintTx(rUmb1.address, rewards.address, umbRewardsSum.toString());
 
-    let txId = checkTxSubmission(multiSig, await waitForTx(tx.hash, provider));
+    const txId = checkTxSubmission(multiSig, await waitForTx(tx.hash, provider));
     await wasTxExecutedByMultiSig(multiSig, txId);
 
     console.log('Balance of Rewards contract:', (await rUmb1.balanceOf(rewards.address)).toString());
@@ -82,13 +82,13 @@ const main = async () => {
       console.log('durations', durations);
       breakLog();
 
-      let tx = await multiSig
+      const tx = await multiSig
         .connect(multiSigOwnerWallet)
         .submitRewardsStartDistributionTx(
           rewards.address, rUmb1.address, startTime, participants, amounts, durations
         );
 
-      let txId = checkTxSubmission(multiSig, await waitForTx(tx.hash, provider));
+      const txId = checkTxSubmission(multiSig, await waitForTx(tx.hash, provider));
 
       if (await wasTxExecutedByMultiSig(multiSig, txId)) {
         console.log('Distribution started at', (await rewards.distributionStartTime()).toString());

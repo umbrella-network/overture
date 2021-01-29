@@ -1,9 +1,9 @@
-import "dotenv/config";
-import "@nomiclabs/hardhat-ethers";
-import "@nomiclabs/hardhat-waffle";
-import "@nomiclabs/hardhat-web3";
-import "@nomiclabs/hardhat-solhint";
-import "solidity-coverage";
+import 'dotenv/config';
+import '@nomiclabs/hardhat-ethers';
+import '@nomiclabs/hardhat-waffle';
+import '@nomiclabs/hardhat-web3';
+import '@nomiclabs/hardhat-solhint';
+import 'solidity-coverage';
 
 import 'hardhat-deploy';
 import 'hardhat-deploy-ethers';
@@ -73,7 +73,7 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.7.5"
+        version: '0.7.5'
       },
     ]
   },
