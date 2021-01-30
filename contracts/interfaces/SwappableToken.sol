@@ -1,9 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.7.5;
 
-// import "@nomiclabs/buidler/console.sol";
-import "../lib/Strings.sol";
-
 // Inheritance
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -22,7 +19,6 @@ import "../interfaces/ISwapReceiver.sol";
 ///          so target token should be responsible for all the check before he mint tokens for swap.
 abstract contract SwappableToken is Owned, ERC20 {
     using SafeMath for uint256;
-    using Strings for string;
 
     uint256 public totalAmountToBeSwapped;
     uint256 public swappedSoFar;
@@ -45,23 +41,12 @@ abstract contract SwappableToken is Owned, ERC20 {
     // ========== VIEWS ========== //
 
     function isSwapStarted() public view returns (bool) {
-        return swapStartsOn <= block.timestamp;
+        return block.timestamp >= swapStartsOn;
     }
 
-    function canIswapMyTokenPrediction(address _address) public view returns (bool) {
+    function canSwapTokens(address _address) public view returns (bool) {
         return balanceOf(_address) <= totalUnlockedAmountOfToken().sub(swappedSoFar);
     }
-
-    // @todo - implement limit to be user friendly,
-    // currently this is simple implementation that acts as FIFO
-    // user sent tx and can't be sure that tx will success (in scenario where everybody want to swap)
-    // maybe we can do better but for now it is how it is
-
-    // thoughts: maybe we can ask user for acceptable time he can 'lock' tokens
-    // and if we are not able to swap now, but we can do it in acceptable by user timeline,
-    // then we will hold a place for swap for user,
-    // so he can get back and execute second part of swap tx and now he will be sure it will not fail?
-    // I think this is the way to go, so I will need to implement this on top of current functionality
 
     function totalUnlockedAmountOfToken() public view returns (uint256) {
         if (block.timestamp < swapStartsOn)
@@ -76,22 +61,17 @@ abstract contract SwappableToken is Owned, ERC20 {
     // ========== MUTATIVE FUNCTIONS ========== //
 
     function swapFor(ISwapReceiver _umb) external {
+        require(block.timestamp >= swapStartsOn, "swapping period has not started yet");
+
         uint amountToSwap = balanceOf(_msgSender());
-        uint _swappedSoFar = swappedSoFar;
 
         require(amountToSwap != 0, "you dont have tokens to swap");
+        require(amountToSwap <= totalUnlockedAmountOfToken().sub(swappedSoFar), "your swap is over the limit");
 
-        require(
-            swapStartsOn <= block.timestamp,
-                string("swap starts in: ").appendNumber(swapStartsOn - block.timestamp)
-        );
-
-        require(amountToSwap <= totalUnlockedAmountOfToken().sub(_swappedSoFar), "your swap is over the limit, sorry");
+        swappedSoFar = swappedSoFar.add(amountToSwap);
 
         _burn(_msgSender(), amountToSwap);
         _umb.swapMint(_msgSender(), amountToSwap);
-
-        swappedSoFar = _swappedSoFar.add(amountToSwap);
 
         emit LogSwap(_msgSender(), amountToSwap);
     }
@@ -100,15 +80,15 @@ abstract contract SwappableToken is Owned, ERC20 {
 
     // ========== RESTRICTED FUNCTIONS ========== //
 
-    function startSwapNow() external onlyOwner {
+    function startEarlySwap() external onlyOwner {
         require(block.timestamp < swapStartsOn, "swap is already allowed");
 
         swapStartsOn = block.timestamp;
-        emit LogStartSwapNow(block.timestamp);
+        emit LogStartEarlySwapNow(block.timestamp);
     }
 
     // ========== EVENTS ========== //
 
-    event LogStartSwapNow(uint time);
+    event LogStartEarlySwapNow(uint time);
     event LogSwap(address indexed swappedTo, uint amount);
 }

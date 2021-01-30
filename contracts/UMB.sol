@@ -30,14 +30,14 @@ contract UMB is MintableToken, ISwapReceiver {
     // ========== CONSTRUCTOR ========== //
 
     constructor (
-        address _multiSig,
+        address _owner,
         address _initialHolder,
         uint _initialBalance,
         uint256 _maxAllowedTotalSupply,
         string memory _name,
         string memory _symbol
     )
-    Owned(_multiSig)
+    Owned(_owner)
     ERC20(_name, _symbol)
     MintableToken(_maxAllowedTotalSupply) {
         if (_initialHolder != address(0) && _initialBalance != 0) {
@@ -53,9 +53,10 @@ contract UMB is MintableToken, ISwapReceiver {
 
     // ========== RESTRICTED FUNCTIONS ========== //
 
-    function setRewardTokens(address[] memory _tokens, bool[] calldata _statuses)
+    function setRewardTokens(address[] calldata _tokens, bool[] calldata _statuses)
     external
     onlyOwner {
+        require(_tokens.length > 0, "please pass a positive number of reward tokens");
         require(_tokens.length == _statuses.length, "please pass same number of tokens and statuses");
 
         for (uint i = 0; i < _tokens.length; i++) {
@@ -65,7 +66,7 @@ contract UMB is MintableToken, ISwapReceiver {
         emit LogSetRewardTokens(_tokens, _statuses);
     }
 
-    function swapMint(address _holder, uint256 _amount) external override assertMaxSupply(_amount) {
+    function swapMint(address _holder, uint256 _amount) public override assertMaxSupply(_amount) {
         require(rewardsTokens[_msgSender()], "only reward token can be swapped");
 
         _mint(_holder, _amount);
