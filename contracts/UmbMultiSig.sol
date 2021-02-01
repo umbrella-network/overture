@@ -81,16 +81,18 @@ contract UmbMultiSig is PowerMultiSig {
         address _rewardToken,
         uint _startTime,
         address[] calldata _participants,
-        uint[] calldata _rewards,
-        uint[] calldata _durations
+        uint256[] calldata _rewards,
+        uint256[] calldata _durations,
+        uint8[] calldata _bulks
     ) public returns (uint) {
         bytes memory data = abi.encodeWithSignature(
-            "startDistribution(address,uint256,address[],uint256[],uint256[])",
+            "startDistribution(address,uint256,address[],uint256[],uint256[],uint8[])",
             _rewardToken,
             _startTime,
             _participants,
             _rewards,
-            _durations
+            _durations,
+            _bulks
         );
 
         return submitTransaction(_destination, 0, data);

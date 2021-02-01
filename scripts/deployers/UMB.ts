@@ -15,7 +15,7 @@ export const UmbContract = async (address: string | undefined = CONFIG.UMB.addre
   return new ethers.Contract(address, Umb.abi, getProvider()).connect(deployer);
 };
 
-export const deployUMB = async (owner: string) => {
+export const deployUMB = async (owner: string): Promise<Contract> => {
   const Contract = await ethers.getContractFactory('UMB');
   const {initialHolder, initialBalance, maxAllowedTotalSupply, name, symbol} = CONFIG.UMB;
 

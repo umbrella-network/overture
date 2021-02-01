@@ -6,7 +6,7 @@ import {BigNumber, ContractFactory, Signer} from 'ethers';
 import {deployMockContract} from '@ethereum-waffle/mock-contract';
 import {Contract} from '@ethersproject/contracts';
 
-import {currentTimestamp, getArtifacts, getProvider, timestamp} from '../scripts/helpers';
+import { getArtifacts, getProvider, timestamp} from '../scripts/helpers';
 import {ethBalanceOf} from './utils';
 
 const [UmbMultiSig, UMB, rUMB, Rewards, StakingRewards] =
@@ -49,7 +49,7 @@ describe('UmbMultiSig', () => {
     const contract = await contractFactory.deploy(
       [await superOwner.getAddress(), await owner1.getAddress(), await owner2.getAddress()],
       powers,
-      4
+      requiredPower
     );
 
     return {
@@ -66,28 +66,6 @@ describe('UmbMultiSig', () => {
       contract,
       provider
     };
-  };
-
-  const mockRUmbBalanceOf = async (account: string, balance = '0') => {
-    await rUmb.mock.balanceOf.withArgs(account).returns(balance);
-  };
-
-  const mockTransferFrom = async (
-    token: Contract,
-    from?: Signer,
-    to?: string,
-    amount?: string | number | BigNumber,
-    returns = true
-  ) => {
-    from && to !== undefined && amount !== undefined
-      ? await token.mock.transferFrom.withArgs(await from.getAddress(), to, amount).returns(returns)
-      : await token.mock.transferFrom.returns(returns);
-  };
-
-  const mockTransfer = async (token: Contract, to?: Signer, amount?: string | number | BigNumber, returns = true) => {
-    to !== undefined && amount !== undefined
-      ? await token.mock.transfer.withArgs(await to.getAddress(), amount).returns(returns)
-      : await token.mock.transfer.returns(returns);
   };
 
   beforeEach(async () => {
@@ -169,7 +147,7 @@ describe('UmbMultiSig', () => {
           .to.be.revertedWith('revert only MultiSigMinter can execute this')
       });
 
-      describe('when actng as multisig', () => {
+      describe('when acting as multisig', () => {
         it('.whenOwnerDoesNotExist throws when owner already exists', async () => {
           await expect(contract.connect(superOwner).submitAddOwner(superOwnerAddress, 1))
             .to.be.revertedWith('owner already exists')
@@ -526,7 +504,7 @@ describe('UmbMultiSig', () => {
     })
 
     it('executes Rewards.startDistribution()', async () => {
-      const params = [umb.address, timestamp(), [anyWalletAddress], [1], [2]];
+      const params = [umb.address, timestamp(), [anyWalletAddress], [1], [2], [0]];
 
       await rewards.mock.startDistribution.withArgs(...params).returns();
 

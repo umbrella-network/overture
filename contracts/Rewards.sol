@@ -86,7 +86,7 @@ contract Rewards is Owned {
         uint256[] calldata _durations,
         uint8[] calldata _bulks
     )
-    external onlyOwner returns (bool) {
+    external onlyOwner {
         require(_participants.length != 0, "there is no _participants");
         require(_participants.length == _rewards.length, "_participants count must match _rewards count");
         require(_participants.length == _durations.length, "_participants count must match _durations count");
@@ -109,7 +109,6 @@ contract Rewards is Owned {
 
         renounceOwnership();
         emit LogBurnKey();
-        return true;
     }
 
     // ========== PRIVATE  ========== //

@@ -1,9 +1,11 @@
 import hre from 'hardhat';
+import {Contract} from '@ethersproject/contracts';
+
 import {constructorAbi} from '../helpers';
 
 const { ethers } = hre;
 
-export const deployRewards = async (owner: string) => {
+export const deployRewards = async (owner: string): Promise<Contract> => {
   const contractName = 'Rewards';
   const Rewards = await ethers.getContractFactory(contractName);
   const rewards = await Rewards.deploy(owner);
