@@ -1,4 +1,4 @@
-import hre, {ethers} from 'hardhat';
+import {ethers} from 'hardhat';
 import {BigNumber} from 'ethers';
 
 export const numberToWei = (n: number | string, decimals = 18): string => {

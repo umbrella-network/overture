@@ -370,7 +370,8 @@ describe('UmbMultiSig', () => {
       expect(await contract.connect(owner2).confirmTransaction(id))
         .to.emit(contract, 'LogConfirmation').withArgs(owner2Address, id);
 
-      await expect(contract.connect(owner1).confirmTransaction(id)).to.emit(contract, 'LogExecution').withArgs(id, '0x');
+      await expect(contract.connect(owner1).confirmTransaction(id))
+        .to.emit(contract, 'LogExecution').withArgs(id, '0x');
     });
 
     it('getTransactionShort returns tx details', async () => {
