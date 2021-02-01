@@ -214,11 +214,11 @@ abstract contract PowerMultiSig {
             Transaction storage txn = transactions[_transactionId];
             txn.executed = block.timestamp;
 
-            (bool success, bytes memory data) = txn.destination.call(txn.data);
+            (bool success, bytes memory returnedData) = txn.destination.call(txn.data);
 
-            require(success, string(abi.encodePacked("executeTransaction failed: ", string(data))));
+            require(success, string(abi.encodePacked("executeTransaction failed: ", string(returnedData))));
 
-            emit LogExecution(_transactionId);
+            emit LogExecution(_transactionId, returnedData);
         }
     }
 
@@ -374,7 +374,7 @@ abstract contract PowerMultiSig {
     event LogConfirmation(address indexed sender, uint256 indexed transactionId);
     event LogRevocation(address indexed sender, uint256 indexed transactionId);
     event LogSubmission(uint256 indexed transactionId);
-    event LogExecution(uint256 indexed transactionId);
+    event LogExecution(uint256 indexed transactionId, bytes returnedData);
     event LogOwnerAddition(address indexed owner, uint256 power);
     event LogOwnerRemoval(address indexed owner);
     event LogPowerChange(uint256 power);

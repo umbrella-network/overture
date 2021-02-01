@@ -370,7 +370,7 @@ describe('UmbMultiSig', () => {
       expect(await contract.connect(owner2).confirmTransaction(id))
         .to.emit(contract, 'LogConfirmation').withArgs(owner2Address, id);
 
-      await expect(contract.connect(owner1).confirmTransaction(id)).to.emit(contract, 'LogExecution').withArgs(id);
+      await expect(contract.connect(owner1).confirmTransaction(id)).to.emit(contract, 'LogExecution').withArgs(id, '0x');
     });
 
     it('getTransactionShort returns tx details', async () => {
@@ -514,14 +514,14 @@ describe('UmbMultiSig', () => {
       await umb.mock.setRewardTokens.withArgs(...params).returns();
 
       await expect(contract.connect(superOwner).submitUMBSetRewardTokensTx(umb.address, ...params))
-        .to.emit(contract, 'LogExecution').withArgs(1)
+        .to.emit(contract, 'LogExecution').withArgs(1, '0x')
     })
 
     it('executes rUMB.startEarlySwap()', async () => {
       await rUmb.mock.startEarlySwap.withArgs().returns();
 
       await expect(contract.connect(superOwner).submitRUMBStartEarlySwapTx(rUmb.address))
-        .to.emit(contract, 'LogExecution').withArgs(1)
+        .to.emit(contract, 'LogExecution').withArgs(1, '0x')
     })
 
     it('executes Rewards.startDistribution()', async () => {
@@ -530,7 +530,7 @@ describe('UmbMultiSig', () => {
       await rewards.mock.startDistribution.withArgs(...params).returns();
 
       await expect(contract.connect(superOwner).submitRewardsStartDistributionTx(rewards.address, ...params))
-        .to.emit(contract, 'LogExecution').withArgs(1)
+        .to.emit(contract, 'LogExecution').withArgs(1, '0x')
     })
 
     it('executes StakingRewards.setRewardsDistribution()', async () => {
@@ -538,7 +538,7 @@ describe('UmbMultiSig', () => {
 
       await expect(contract.connect(superOwner)
         .submitStakingRewardsSetRewardsDistributionTx(stakingRewards.address, anyWalletAddress))
-        .to.emit(contract, 'LogExecution').withArgs(1)
+        .to.emit(contract, 'LogExecution').withArgs(1, '0x')
     })
 
     it('executes StakingRewards.setRewardsDuration()', async () => {
@@ -546,7 +546,7 @@ describe('UmbMultiSig', () => {
 
       await expect(contract.connect(superOwner)
         .submitStakingRewardsSetRewardsDurationTx(stakingRewards.address, 1234))
-        .to.emit(contract, 'LogExecution').withArgs(1)
+        .to.emit(contract, 'LogExecution').withArgs(1, '0x')
     })
 
     it('executes StakingRewards.finishFarming()', async () => {
@@ -554,7 +554,7 @@ describe('UmbMultiSig', () => {
 
       await expect(contract.connect(superOwner)
         .submitStakingRewardsFinishFarmingTx(stakingRewards.address))
-        .to.emit(contract, 'LogExecution').withArgs(1)
+        .to.emit(contract, 'LogExecution').withArgs(1, '0x')
     })
   });
 });
