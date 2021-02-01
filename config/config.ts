@@ -1,5 +1,5 @@
-import {ethers} from 'ethers';
 import hre from 'hardhat';
+import {ethers} from 'ethers';
 import {currentTimestamp, oneMonth, oneYear} from '../scripts/helpers';
 
 const env = process.env.NODE_ENV || 'development';
@@ -128,7 +128,6 @@ const envConfig: Record<string, ConfigType> = {
     },
     UMB: {
       address: '0x5D01d44fC4A028a8FAb9cB49cc161A20727F985F',
-      // 0000000000000000000000002663bfc8d0c833f602f6ff74482c113187cb0e1e000000000000000000000000e1cdce9a678e84aa73d3266176c6e11b3edc4f67
       maxAllowedTotalSupply: hre.web3.utils.toWei('500000000', 'ether'),
       name: 'Umbrella',
       symbol: 'UMB',
@@ -150,7 +149,8 @@ const envConfig: Record<string, ConfigType> = {
       },
       farming: {
         address: '0x7b471d144032a41D0DcE7678c4fCF351Ce30eA07',
-        // rewardsDistribution: '0x66f13FDceed822E74b6a1e08e082Fa699fF36454', // who can notify about reward and start whole farming process
+        // who can notify about reward and start whole farming process:
+        // rewardsDistribution: '0x66f13FDceed822E74b6a1e08e082Fa699fF36454',
         tokenAmountForDeFiRewards: toWei('45833333', 'ether')
       },
       umbRewards: {

@@ -12,7 +12,6 @@ import "./interfaces/Pausable.sol";
 import "./interfaces/IBurnableToken.sol";
 import "./interfaces/RewardsDistributionRecipient.sol";
 
-
 contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, ReentrancyGuard, Pausable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -49,6 +48,7 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
     }
 
     // ========== VIEWS ========== //
+
     function totalSupply() override public view returns (uint256) {
         return _totalSupply;
     }
@@ -90,6 +90,7 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
 
         _totalSupply = _totalSupply.add(amount);
         _balances[msg.sender] = _balances[msg.sender].add(amount);
+
         stakingToken.safeTransferFrom(msg.sender, address(this), amount);
 
         emit Staked(msg.sender, amount);
@@ -106,6 +107,7 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
 
     function getReward() override public nonReentrant updateReward(msg.sender) {
         uint256 reward = rewards[msg.sender];
+
         if (reward > 0) {
             rewards[msg.sender] = 0;
             rewardsToken.safeTransfer(msg.sender, reward);
@@ -121,47 +123,62 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
     // ========== RESTRICTED FUNCTIONS ========== //
 
     function notifyRewardAmount(
-        uint256 reward
+        uint256 _reward
     ) override virtual external whenActive onlyRewardsDistribution updateReward(address(0)) {
         if (block.timestamp >= periodFinish) {
-            rewardRate = reward.div(rewardsDuration);
+            rewardRate = _reward.div(rewardsDuration);
         } else {
             uint256 remaining = periodFinish.sub(block.timestamp);
             uint256 leftover = remaining.mul(rewardRate);
-            rewardRate = reward.add(leftover).div(rewardsDuration);
+            rewardRate = _reward.add(leftover).div(rewardsDuration);
         }
 
         // Ensure the provided reward amount is not more than the balance in the contract.
         // This keeps the reward rate in the right range, preventing overflows due to
         // very high values of rewardRate in the earned and rewardsPerToken functions;
         // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
-        uint balance = rewardsToken.balanceOf(address(this));
+        uint256 balance = rewardsToken.balanceOf(address(this));
+
         require(rewardRate <= balance.div(rewardsDuration), "Provided reward too high");
 
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(rewardsDuration);
-        emit RewardAdded(reward);
+        emit RewardAdded(_reward);
     }
 
     function setRewardsDuration(uint256 _rewardsDuration) virtual external whenActive onlyOwner {
+        require(_rewardsDuration > 0, "empty _rewardsDuration");
+
         require(
             block.timestamp > periodFinish,
             "Previous rewards period must be complete before changing the duration for the new period"
         );
+
         rewardsDuration = _rewardsDuration;
         emit RewardsDurationUpdated(rewardsDuration);
     }
 
-    // @todo test this well!!
-    function stop() external whenActive onlyOwner {
-        require(periodFinish != 0 && block.timestamp < periodFinish, "can't stop if not started or already finished");
+    // when farming was started with 1y and 12tokens
+    // and we want to finish after 4 months, we need to end up with situation
+    // like we were starting with 4mo and 4 tokens.
+    function finishFarming() external whenActive onlyOwner {
+        require(block.timestamp < periodFinish, "can't stop if not started or already finished");
 
-        uint delta = periodFinish - block.timestamp;
-        uint tokensToBurn = delta.mul(rewardPerToken()).mul(_totalSupply).div(1e18);
+        stopped = true;
+        uint256 tokensToBurn;
+
+        if (_totalSupply == 0) {
+            tokensToBurn = rewardsToken.balanceOf(address(this));
+        } else {
+            uint256 remaining = periodFinish.sub(block.timestamp);
+            tokensToBurn = rewardRate.mul(remaining);
+            rewardsDuration = rewardsDuration - remaining;
+        }
 
         periodFinish = block.timestamp;
         IBurnableToken(address(rewardsToken)).burn(tokensToBurn);
-        stopped = true;
+
+        emit FarmingFinished(tokensToBurn);
     }
 
     // ========== MODIFIERS ========== //
@@ -188,4 +205,5 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
     event RewardsDurationUpdated(uint256 newDuration);
+    event FarmingFinished(uint256 burnedTokens);
 }

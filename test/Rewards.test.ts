@@ -36,9 +36,14 @@ describe('Rewards', async () => {
     // check initial values
     expect(await rewards.participantsCount()).to.equal(0, 'A new contract should have no participants');
     expect(await rewards.balanceOf(ownerAddress)).to.equal(0, 'The owner should have 0 balance');
-    expect(cloneReward(await rewards.rewards(ethers.constants.AddressZero))).to.eql(newReward(0, 0, 0), 'A new contract should have no rewards');
+
+    expect(cloneReward(await rewards.rewards(ethers.constants.AddressZero)))
+      .to.eql(newReward(0, 0, 0), 'A new contract should have no rewards');
+
     expect(await rewards.distributionStartTime()).to.equal(0, 'distributionStartTime should be 0 initially');
-    expect(await rewards.rewardToken()).to.equal(ethers.constants.AddressZero, 'rewardToken should be 0x0 address initially');
+
+    expect(await rewards.rewardToken())
+      .to.equal(ethers.constants.AddressZero, 'rewardToken should be 0x0 address initially');
   });
 
   it('Can transfer ownership to another address', async () => {
@@ -49,30 +54,38 @@ describe('Rewards', async () => {
 
   describe('.startDistribution()', () => {
     it('Participant array should be non-empty', async () => {
-      await expect(rewards.startDistribution(ethers.constants.AddressZero, 1, [], [1000], [10])).to.revertedWith('VM Exception');
+      await expect(rewards.startDistribution(ethers.constants.AddressZero, 1, [], [1000], [10]))
+        .to.revertedWith('VM Exception');
     });
 
     it('Length of participants and rewards should match', async () => {
-      await expect(rewards.startDistribution(ethers.constants.AddressZero, 1, [participantAddress], [], [10])).to.revertedWith('VM Exception');
+      await expect(rewards.startDistribution(ethers.constants.AddressZero, 1, [participantAddress], [], [10]))
+        .to.revertedWith('VM Exception');
     });
 
     it('Length of participants and durations should match', async () => {
-      await expect(rewards.startDistribution(ethers.constants.AddressZero, 1, [participantAddress], [1000], [])).to.revertedWith('VM Exception');
+      await expect(rewards.startDistribution(ethers.constants.AddressZero, 1, [participantAddress], [1000], []))
+        .to.revertedWith('VM Exception');
     });
 
     it('Number of allocated tokens cannot not be less than the amount of rewards', async () => {
       await token.mock.balanceOf.withArgs(rewards.address).returns(999);
 
-      await expect(rewards.startDistribution(token.address, 1, [participantAddress], [1000], [10])).to.revertedWith('VM Exception');
+      await expect(rewards.startDistribution(token.address, 1, [participantAddress], [1000], [10]))
+        .to.revertedWith('VM Exception');
     });
 
     it('The owner can start distribution', async () => {
       await token.mock.balanceOf.withArgs(rewards.address).returns(1001);
 
-      expect(await rewards.startDistribution(token.address, 1, [participantAddress], [1000], [10])).to.emit(rewards, 'LogBurnKey');
+      expect(await rewards.startDistribution(token.address, 1, [participantAddress], [1000], [10]))
+        .to.emit(rewards, 'LogBurnKey');
 
       // should lock ownership
-      expect(await rewards.owner()).to.equal(ethers.constants.AddressZero, 'The owner resigns from the contract after startDistribution');
+      expect(await rewards.owner()).to.equal(
+        ethers.constants.AddressZero,
+        'The owner resigns from the contract after startDistribution'
+      );
 
       expect(await rewards.participantsCount()).to.equal(1, 'The number of participants should be 1');
     });
@@ -86,7 +99,8 @@ describe('Rewards', async () => {
 
       const startTime = prevTimestamp + 5, duration = 23, amount = 61;
 
-      expect(await rewards.startDistribution(token.address, startTime, [participantAddress], [amount], [duration])).to.emit(rewards, 'LogBurnKey');
+      expect(await rewards.startDistribution(token.address, startTime, [participantAddress], [amount], [duration]))
+        .to.emit(rewards, 'LogBurnKey');
 
       for (let i = 0; i <= duration + (startTime - prevTimestamp); ++i) {
         const {timestamp} = await ethers.provider.getBlock('latest');
@@ -95,7 +109,8 @@ describe('Rewards', async () => {
 
         const expectedBalance = Math.floor(progress * amount);
 
-        expect(await rewards.balanceOf(participantAddress)).to.equal(expectedBalance, `The balance is expected to be ${expectedBalance}`);
+        expect(await rewards.balanceOf(participantAddress))
+          .to.equal(expectedBalance, `The balance is expected to be ${expectedBalance}`);
 
         // mines and increases time by 1
         await ethers.provider.send('evm_mine', []);
@@ -124,12 +139,18 @@ describe('Rewards', async () => {
       await rewards.startDistribution(token.address, 1, [participantAddress], [1000], [10]);
 
       expect(await rewards.balanceOf(participantAddress)).to.equal(1000, 'balanceOf returns all tokens');
-      expect(cloneReward(await rewards.rewards(participantAddress))).to.eql(newReward(1000, 10, 0), 'rewards returns all tokens');
+      expect(cloneReward(await rewards.rewards(participantAddress)))
+        .to.eql(newReward(1000, 10, 0), 'rewards returns all tokens');
 
-      expect(await rewards.connect(participant).claim()).to.emit(rewards, 'LogClaimed').withArgs(participantAddress, 1000);
+      expect(await rewards.connect(participant).claim())
+        .to.emit(rewards, 'LogClaimed').withArgs(participantAddress, 1000);
 
       expect(await rewards.balanceOf(participantAddress)).to.equal(0, 'balance is 0 when all tokens are claimed');
-      expect(cloneReward(await rewards.rewards(participantAddress))).to.eql(newReward(1000, 10, 1000), 'all rewards are claimed; so, tokens paid equal to the total number of tokens');
+      expect(cloneReward(await rewards.rewards(participantAddress)))
+        .to.eql(
+          newReward(1000, 10, 1000),
+        'all rewards are claimed; so, tokens paid equal to the total number of tokens'
+      );
     });
 
     it('Claim rewards gradually', async () => {
@@ -141,7 +162,8 @@ describe('Rewards', async () => {
 
       const startTime = prevTimestamp + 5, duration = 23, amount = 61;
 
-      expect(await rewards.startDistribution(token.address, startTime, [participantAddress], [amount], [duration])).to.emit(rewards, 'LogBurnKey');
+      expect(await rewards.startDistribution(token.address, startTime, [participantAddress], [amount], [duration]))
+        .to.emit(rewards, 'LogBurnKey');
 
       let claimed = 0;
       for (let i = 0; i <= duration + (startTime - prevTimestamp); ++i) {
@@ -151,10 +173,12 @@ describe('Rewards', async () => {
         const toClaim = Math.floor(progress * amount) - claimed;
 
         if (toClaim > 0) {
-          expect(await rewards.connect(participant).claim()).to.emit(rewards, 'LogClaimed').withArgs(participantAddress, toClaim);
+          expect(await rewards.connect(participant).claim())
+            .to.emit(rewards, 'LogClaimed').withArgs(participantAddress, toClaim);
 
           claimed += toClaim;
-          expect(cloneReward(await rewards.rewards(participantAddress))).to.eql(newReward(amount, duration, claimed), `${claimed} tokens are claimed`);
+          expect(cloneReward(await rewards.rewards(participantAddress)))
+            .to.eql(newReward(amount, duration, claimed), `${claimed} tokens are claimed`);
         } else {
           await ethers.provider.send('evm_mine', []);
         }
@@ -174,7 +198,8 @@ describe('Rewards', async () => {
   });
 
   it('Cannot send ETH to the contract', async () => {
-    await expect(owner.sendTransaction({from: ownerAddress, to: rewards.address, value: '0x20'})).to.revertedWith('Transaction reverted');
+    await expect(owner.sendTransaction({from: ownerAddress, to: rewards.address, value: '0x20'}))
+      .to.revertedWith('Transaction reverted');
   });
 });
 

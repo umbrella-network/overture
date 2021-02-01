@@ -20,28 +20,72 @@ describe('rUMB', async () => {
   let holder: Signer, holderAddress: string;
 
   beforeEach(async () => {
-    ({swapReceiver, swapDuration, totalAmountToBeSwapped, initialBalance, maxAllowedTotalSupply, owner, holder, rUMB, ownerAddress, holderAddress} = await setup(0, 100, 23));
+    ({
+      swapReceiver,
+      swapDuration,
+      totalAmountToBeSwapped,
+      initialBalance,
+      maxAllowedTotalSupply,
+      owner,
+      holder,
+      rUMB,
+      ownerAddress,
+      holderAddress
+    } = await setup(0, 100, 23));
   });
 
   const setup = async (initialBalance: number, maxAllowedTotalSupply: number, swapDuration: number) => {
     const [owner, holder, holder2] = await ethers.getSigners();
 
     const contract = await ethers.getContractFactory('rUMB');
-
     const swapReceiver = await deployMockContract(owner, (await artifacts.readArtifact('ISwapReceiver')).abi);
 
-    const rUMB = await contract.deploy(owner.address, holder.address, initialBalance, maxAllowedTotalSupply, swapDuration, name, symbol);
+    const rUMB = await contract.deploy(
+      owner.address,
+      holder.address,
+      initialBalance,
+      maxAllowedTotalSupply,
+      swapDuration,
+      name,
+      symbol
+    );
+
     await rUMB.deployed();
 
     const {timestamp: timeDeployed} = await ethers.provider.getBlock('latest');
 
-    return {timeDeployed, swapReceiver, swapDuration, initialBalance, maxAllowedTotalSupply, owner, ownerAddress: owner.address, holderAddress: holder.address, holder, holder2Address: holder2.address, holder2, rUMB, totalAmountToBeSwapped: maxAllowedTotalSupply};
+    return {
+      timeDeployed,
+      swapReceiver,
+      swapDuration,
+      initialBalance,
+      maxAllowedTotalSupply,
+      owner,
+      ownerAddress: owner.address,
+      holderAddress: holder.address,
+      holder,
+      holder2Address: holder2.address,
+      holder2,
+      rUMB,
+      totalAmountToBeSwapped: maxAllowedTotalSupply
+    };
   };
 
   describe('.rUMB()', () => {
     describe('with an initial holder', () => {
       beforeEach(async () => {
-        ({swapReceiver, swapDuration, totalAmountToBeSwapped, initialBalance, maxAllowedTotalSupply, owner, holder, rUMB, ownerAddress, holderAddress} = await setup(50, 100, 10));
+        ({
+          swapReceiver,
+          swapDuration,
+          totalAmountToBeSwapped,
+          initialBalance,
+          maxAllowedTotalSupply,
+          owner,
+          holder,
+          rUMB,
+          ownerAddress,
+          holderAddress
+        } = await setup(50, 100, 10));
       });
 
       it('Should create a contract with an assigned owner', async () => {
@@ -102,18 +146,24 @@ describe('rUMB', async () => {
 
     it('Total supply cannot be equal to zero', async () => {
       const contract = await ethers.getContractFactory('rUMB');
-      await expect(contract.deploy(ownerAddress, ethers.constants.AddressZero, 0, 0, swapDuration, name, symbol)).to.revertedWith('revert _maxAllowedTotalSupply is empty');
+
+      await expect(contract.deploy(ownerAddress, ethers.constants.AddressZero, 0, 0, swapDuration, name, symbol))
+        .to.revertedWith('revert _maxAllowedTotalSupply is empty');
     });
 
     it('Swap duration cannot be equal to zero', async () => {
       const contract = await ethers.getContractFactory('rUMB');
-      await expect(contract.deploy(ownerAddress, ethers.constants.AddressZero, 0, maxAllowedTotalSupply, 0, name, symbol)).to.revertedWith('revert swapDuration is empty');
+
+      await
+        expect(contract.deploy(ownerAddress, ethers.constants.AddressZero, 0, maxAllowedTotalSupply, 0, name, symbol))
+        .to.revertedWith('revert swapDuration is empty');
     });
   });
 
   describe('.mint()', async () => {
     it('The owner can mint tokens', async () => {
-      await expect(rUMB.mint(holderAddress, maxAllowedTotalSupply)).to.emit(rUMB, 'Transfer').withArgs(ethers.constants.AddressZero, holderAddress, maxAllowedTotalSupply);
+      await expect(rUMB.mint(holderAddress, maxAllowedTotalSupply))
+        .to.emit(rUMB, 'Transfer').withArgs(ethers.constants.AddressZero, holderAddress, maxAllowedTotalSupply);
     });
 
     it('The total supply changes after some tokens were minted', async () => {
@@ -127,11 +177,13 @@ describe('rUMB', async () => {
     });
 
     it('The owner cannot mint more tokens than the maximum supply', async () => {
-      await expect(rUMB.mint(holderAddress, maxAllowedTotalSupply + 1)).to.revertedWith('revert total supply limit exceeded');
+      await expect(rUMB.mint(holderAddress, maxAllowedTotalSupply + 1))
+        .to.revertedWith('revert total supply limit exceeded');
     });
 
     it('Nobody else can mint tokens', async () => {
-      await expect(rUMB.connect(holder).mint(holderAddress, maxAllowedTotalSupply)).to.revertedWith('revert Ownable: caller is not the owner');
+      await expect(rUMB.connect(holder).mint(holderAddress, maxAllowedTotalSupply))
+        .to.revertedWith('revert Ownable: caller is not the owner');
     });
   });
 
@@ -141,7 +193,8 @@ describe('rUMB', async () => {
     });
 
     it('Anyone can burn tokens', async () => {
-      await expect(rUMB.connect(holder).burn(50)).to.emit(rUMB, 'Transfer').withArgs(holderAddress, ethers.constants.AddressZero, 50);
+      await expect(rUMB.connect(holder).burn(50))
+        .to.emit(rUMB, 'Transfer').withArgs(holderAddress, ethers.constants.AddressZero, 50);
     });
 
     it('Nobody can burn more tokens than they have', async () => {
@@ -251,7 +304,9 @@ describe('rUMB', async () => {
 
     it('Cannot swap if not enough tokens are unlocked', async () => {
       await ethers.provider.send('evm_increaseTime', [swapDelay + swapDuration - 2]);
-      await expect(rUMB.connect(holder).swapFor(swapReceiver.address)).to.revertedWith('revert your swap is over the limit');
+
+      await expect(rUMB.connect(holder).swapFor(swapReceiver.address))
+        .to.revertedWith('revert your swap is over the limit');
     });
 
     it('Successfully swapped all tokens', async () => {
@@ -260,7 +315,8 @@ describe('rUMB', async () => {
 
       await swapReceiver.mock.swapMint.withArgs(holderAddress, 67).returns();
 
-      await expect(rUMB.connect(holder).swapFor(swapReceiver.address)).to.emit(rUMB, 'LogSwap').withArgs(holderAddress, 67);
+      await expect(rUMB.connect(holder).swapFor(swapReceiver.address))
+        .to.emit(rUMB, 'LogSwap').withArgs(holderAddress, 67);
 
       expect(await rUMB.balanceOf(holderAddress)).to.equal(0, 'The owner should have 0 balance');
     });
@@ -271,7 +327,8 @@ describe('rUMB', async () => {
 
       await swapReceiver.mock.swapMint.withArgs(holderAddress, 67).returns();
 
-      await expect(rUMB.connect(holder).swapFor(swapReceiver.address)).to.emit(rUMB, 'Transfer').withArgs(holderAddress, ethers.constants.AddressZero, 67);
+      await expect(rUMB.connect(holder).swapFor(swapReceiver.address))
+        .to.emit(rUMB, 'Transfer').withArgs(holderAddress, ethers.constants.AddressZero, 67);
     });
 
     it('swappedSoFar was updated', async () => {
@@ -290,15 +347,19 @@ describe('rUMB', async () => {
       await ethers.provider.send('evm_mine', []);
 
       await swapReceiver.mock.swapMint.withArgs(holderAddress, 67).returns();
-
       await rUMB.connect(holder).swapFor(swapReceiver.address);
 
-      await expect(rUMB.connect(holder).swapFor(swapReceiver.address)).to.revertedWith('revert you dont have tokens to swap');
+      await expect(rUMB.connect(holder).swapFor(swapReceiver.address))
+        .to.revertedWith('revert you dont have tokens to swap');
     });
   });
 
   it('Cannot send ETH to the contract', async () => {
-    await expect(owner.sendTransaction({from: ownerAddress, to: rUMB.address, value: '0x20'})).to.revertedWith('Transaction reverted');
+    await expect(owner.sendTransaction({
+      from: ownerAddress,
+      to: rUMB.address,
+      value: '0x20'
+    })).to.revertedWith('Transaction reverted');
   });
 
   it('Can transfer ownership to another address', async () => {
@@ -332,7 +393,8 @@ describe('rUMB', async () => {
     it('Cannot swap if UMB token is not whitelisted', async () => {
       await UMB.setRewardTokens([rUMB.address], [false]);
 
-      await expect(rUMB.connect(holder).swapFor(UMB.address)).to.revertedWith('revert only reward token can be swapped');
+      await expect(rUMB.connect(holder).swapFor(UMB.address))
+        .to.revertedWith('revert only reward token can be swapped');
     });
 
     it('Cannot swap if UMB token exceeds the maximum amount', async () => {
