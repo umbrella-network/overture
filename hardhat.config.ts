@@ -34,7 +34,9 @@ const config: HardhatUserConfig = {
         // 0xe5904695748fe4a84b40b3fc79de2277660bd1d3
         {balance, privateKey: '0x23c601ae397441f3ef6f1075dcb0031ff17fb079837beadaf3c84d96c6f3e569'},
         // 0x2ffd013aaa7b5a7da93336c2251075202b33fb2b
-        {balance, privateKey: '0x87630b2d1de0fbd5044eb6891b3d9d98c34c8d310c852f98550ba774480e47cc'}
+        {balance, privateKey: '0x87630b2d1de0fbd5044eb6891b3d9d98c34c8d310c852f98550ba774480e47cc'},
+        {balance, privateKey: '0x275cc4a2bfd4f612625204a20a2280ab53a6da2d14860c47a9f5affe58ad86d4'},
+        {balance, privateKey: '0xee9d129c1997549ee09c0757af5939b2483d80ad649a0eda68e8b0357ad11131'}
       ]
     },
     localhost: {
@@ -78,6 +80,5 @@ const config: HardhatUserConfig = {
     ]
   },
 };
-
 
 export default config;

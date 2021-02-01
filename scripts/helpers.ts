@@ -118,6 +118,8 @@ export const oneYear = 60 * 60 * 24 * 365;
 
 export const currentTimestamp = Math.round(Date.now() / 1000);
 
+export const timestamp = ():number => Math.round(Date.now() / 1000);
+
 export const getArtifacts = (...contractsNames: string[]): any[] => {
   return contractsNames.map(name =>
     require(`${__dirname}/../artifacts/contracts/${name}.sol/${name}.json`)

@@ -12,6 +12,7 @@ import "./interfaces/Pausable.sol";
 import "./interfaces/IBurnableToken.sol";
 import "./interfaces/RewardsDistributionRecipient.sol";
 
+// based on synthetix
 contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, ReentrancyGuard, Pausable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
