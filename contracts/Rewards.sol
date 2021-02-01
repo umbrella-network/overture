@@ -14,6 +14,7 @@ import "./interfaces/Owned.sol";
 ///           - node, founders, early contributors etc...
 ///          It can be used for future distributions for next milestones also
 ///          as its functionality stays the same.
+///          It supports linear vesting and bulk vesting
 /// @dev     Deploy contract. Mint tokens reward for this contract.
 ///          Then as owner call .startDistribution() - this will set everything
 ///          and it will burn owner key.
@@ -23,14 +24,15 @@ contract Rewards is Owned {
 
     ERC20 public rewardToken;
 
-    uint public distributionStartTime;
+    uint256 public distributionStartTime;
     mapping(address => Reward) public rewards;
     address[] public participants;
 
     struct Reward {
-        uint total;
-        uint duration;
-        uint paid;
+        uint256 total;
+        uint256 duration;
+        uint256 paid;
+        uint8 bulk; //
     }
 
     // ========== CONSTRUCTOR ========== //
@@ -40,14 +42,14 @@ contract Rewards is Owned {
 
     // ========== VIEWS ========== //
 
-    function participantsCount() public view returns (uint) {
+    function participantsCount() public view returns (uint256) {
         return participants.length;
     }
 
-    function balanceOf(address _address) public view returns (uint) {
-        uint start = distributionStartTime;
+    function balanceOf(address _address) public view returns (uint256) {
+        uint256 start = distributionStartTime;
 
-        if (block.timestamp < start) {
+        if (block.timestamp <= start) {
             return 0;
         }
 
@@ -57,13 +59,15 @@ contract Rewards is Owned {
             return reward.total.sub(reward.paid);
         }
 
-        return reward.total.mul(block.timestamp.sub(start)).div(reward.duration).sub(reward.paid);
+        return reward.bulk == 0
+            ? reward.total.mul(block.timestamp.sub(start)).div(reward.duration).sub(reward.paid)
+            : bulkProgress(reward.total, reward.duration, reward.bulk);
     }
 
     // ========== MUTATIVE FUNCTIONS ========== //
 
     function claim() external {
-        uint balance = balanceOf(_msgSender());
+        uint256 balance = balanceOf(_msgSender());
         require(balance != 0, "you have no tokens to claim");
 
         rewards[_msgSender()].paid = rewards[_msgSender()].paid.add(balance);
@@ -76,22 +80,25 @@ contract Rewards is Owned {
 
     function startDistribution(
         ERC20 _rewardToken,
-        uint _startTime,
+        uint256 _startTime,
         address[] calldata _participants,
-        uint[] calldata _rewards,
-        uint[] calldata _durations
+        uint256[] calldata _rewards,
+        uint256[] calldata _durations,
+        uint8[] calldata _bulks
     )
-    external onlyOwner {
+    external onlyOwner returns (bool) {
         require(_participants.length != 0, "there is no _participants");
         require(_participants.length == _rewards.length, "_participants count must match _rewards count");
         require(_participants.length == _durations.length, "_participants count must match _durations count");
+        require(_participants.length == _bulks.length, "_participants count must match _bulks count");
         require(_startTime != 0, "start time is empty");
 
         distributionStartTime = _startTime;
-        uint sum = 0;
+        uint256 sum = 0;
 
-        for (uint i = 0; i < _participants.length; i++) {
-            rewards[_participants[i]] = Reward(_rewards[i], _durations[i], 0);
+        for (uint256 i = 0; i < _participants.length; i++) {
+            require(_bulks[i] <= 100, "bulk must be between 0 - 100");
+            rewards[_participants[i]] = Reward(_rewards[i], _durations[i], 0, _bulks[i]);
             sum = sum.add(_rewards[i]);
         }
 
@@ -102,10 +109,23 @@ contract Rewards is Owned {
 
         renounceOwnership();
         emit LogBurnKey();
+        return true;
+    }
+
+    // ========== PRIVATE  ========== //
+
+    // bulk distribution is release % of total amount on particular day
+    // this day is also calculated by % eg:
+    // if we have 10 days and bulk = 20, then release will be
+    // 20% on day 2, 40% on day 4, 60% on day 6 etc
+    function bulkProgress(uint256 _totalAmount, uint256 _duration, uint8 _bulk) internal view returns (uint256) {
+        uint bulks = block.timestamp.sub(distributionStartTime).mul(100).div(_duration * _bulk);
+        uint256 result = _totalAmount.mul(_bulk).mul(bulks) / 100;
+        return result > _totalAmount ? _totalAmount : result;
     }
 
     // ========== EVENTS ========== //
 
-    event LogClaimed(address indexed recipient, uint amount);
+    event LogClaimed(address indexed recipient, uint256 amount);
     event LogBurnKey();
 }

@@ -1,3 +1,5 @@
+import 'hardhat'; // require for IntelliJ to run tests
+import '@nomiclabs/hardhat-waffle'; // require for IntelliJ to run tests
 import {ethers} from 'hardhat';
 import {solidity} from 'ethereum-waffle';
 import chai, {expect} from 'chai';
@@ -5,6 +7,7 @@ import {BigNumber, Signer} from 'ethers';
 import {deployMockContract} from '@ethereum-waffle/mock-contract';
 import {Contract} from '@ethersproject/contracts';
 import IERC20 from '@openzeppelin/contracts/build/contracts/IERC20.json';
+import {blockTimestamp, mintBlock} from './utils';
 
 chai.use(solidity);
 
@@ -52,33 +55,33 @@ describe('Rewards', async () => {
     expect(await rewards.owner()).to.equal(participantAddress, 'Rewards contract should belong to another address');
   });
 
-  describe('.startDistribution()', () => {
+  describe('.startDistribution()', async () => {
     it('Participant array should be non-empty', async () => {
-      await expect(rewards.startDistribution(ethers.constants.AddressZero, 1, [], [1000], [10]))
-        .to.revertedWith('VM Exception');
+      await expect(rewards.startDistribution(ethers.constants.AddressZero, 1, [], [1000], [10], [0]))
+        .to.revertedWith('revert there is no _participants');
     });
 
     it('Length of participants and rewards should match', async () => {
-      await expect(rewards.startDistribution(ethers.constants.AddressZero, 1, [participantAddress], [], [10]))
-        .to.revertedWith('VM Exception');
+      await expect(rewards.startDistribution(ethers.constants.AddressZero, 1, [participantAddress], [], [10], [0]))
+        .to.revertedWith('revert _participants count must match _rewards count');
     });
 
     it('Length of participants and durations should match', async () => {
-      await expect(rewards.startDistribution(ethers.constants.AddressZero, 1, [participantAddress], [1000], []))
-        .to.revertedWith('VM Exception');
+      await expect(rewards.startDistribution(ethers.constants.AddressZero, 1, [participantAddress], [1000], [], [0]))
+        .to.revertedWith('revert _participants count must match _durations count');
     });
 
     it('Number of allocated tokens cannot not be less than the amount of rewards', async () => {
       await token.mock.balanceOf.withArgs(rewards.address).returns(999);
 
-      await expect(rewards.startDistribution(token.address, 1, [participantAddress], [1000], [10]))
-        .to.revertedWith('VM Exception');
+      await expect(rewards.startDistribution(token.address, 1, [participantAddress], [1000], [10], [0]))
+        .to.revertedWith('revert not enough tokens for rewards');
     });
 
     it('The owner can start distribution', async () => {
       await token.mock.balanceOf.withArgs(rewards.address).returns(1001);
 
-      expect(await rewards.startDistribution(token.address, 1, [participantAddress], [1000], [10]))
+      expect(await rewards.startDistribution(token.address, 1, [participantAddress], [1000], [10], [0]))
         .to.emit(rewards, 'LogBurnKey');
 
       // should lock ownership
@@ -91,21 +94,20 @@ describe('Rewards', async () => {
     });
   });
 
-  describe('.balanceOf()', () => {
+  describe('.balanceOf()', async () => {
     it('Reward balance increases over time', async () => {
       await token.mock.balanceOf.withArgs(rewards.address).returns(1000);
 
-      const {timestamp: prevTimestamp} = await ethers.provider.getBlock('latest');
-
+      const prevTimestamp = await blockTimestamp();
       const startTime = prevTimestamp + 5, duration = 23, amount = 61;
 
-      expect(await rewards.startDistribution(token.address, startTime, [participantAddress], [amount], [duration]))
+      expect(await rewards.startDistribution(token.address, startTime, [participantAddress], [amount], [duration], [0]))
         .to.emit(rewards, 'LogBurnKey');
 
       for (let i = 0; i <= duration + (startTime - prevTimestamp); ++i) {
-        const {timestamp} = await ethers.provider.getBlock('latest');
+        const timestamp = await blockTimestamp();
 
-        const progress = Math.min(Math.max(0,  (timestamp - startTime) / duration), 1);
+        const progress = Math.min(Math.max(0, (timestamp - startTime) / duration), 1);
 
         const expectedBalance = Math.floor(progress * amount);
 
@@ -113,8 +115,55 @@ describe('Rewards', async () => {
           .to.equal(expectedBalance, `The balance is expected to be ${expectedBalance}`);
 
         // mines and increases time by 1
-        await ethers.provider.send('evm_mine', []);
+        await mintBlock();
       }
+    });
+  })
+
+  describe('.bulkProgress()', async () => {
+    [
+      {bulk: 20, amount: 61, duration: 23},
+      {bulk: 1, amount: 100, duration: 23},
+      {bulk: 15, amount: 10000000, duration: 345},
+      {bulk: 30, amount: 91, duration: 23}
+    ].forEach(testCase => {
+      const {bulk, amount, duration} = testCase
+
+      it(`bulk increases over time by ${bulk}%`, async () => {
+        await token.mock.balanceOf.withArgs(rewards.address).returns(amount);
+        const startTime = await blockTimestamp() + 1;
+        const bulkAmount = Math.trunc(amount * bulk / 100);
+        const bulkBalances: number[] = [];
+        let bulkBalance = 0;
+
+        await rewards.startDistribution(token.address, startTime, [participantAddress], [amount], [duration], [bulk])
+
+        while (bulkBalances.length < 100 / bulk) {
+          bulkBalances.push(bulkBalance)
+          bulkBalance = Math.min(amount, bulkBalances[bulkBalances.length - 1] + bulkAmount)
+        }
+
+        bulkBalances.push(amount)
+        let progress = 0;
+
+        while (progress < 1) {
+          await mintBlock();
+
+          const timestamp = await blockTimestamp();
+          progress = Math.min(Math.trunc((timestamp - startTime) / duration * 100) / 100, 1);
+          const id = Math.floor(progress * 100 / bulk);
+
+          expect(await rewards.balanceOf(participantAddress))
+            .to.equal(
+              progress === 1 ? amount : bulkBalances[id],
+            `invalid bulk balance for ${Math.trunc(progress * 100)}`
+          );
+        }
+
+        await mintBlock();
+        await mintBlock();
+        expect(await rewards.balanceOf(participantAddress)).to.eq(amount, 'expect total amount at the end')
+      });
     });
   });
 
@@ -125,18 +174,18 @@ describe('Rewards', async () => {
 
       const {timestamp} = await ethers.provider.getBlock('latest');
 
-      await rewards.startDistribution(token.address, timestamp + 1, [participantAddress], [1000], [10]);
+      await rewards.startDistribution(token.address, timestamp + 2, [participantAddress], [1000], [10], [0]);
 
       expect(await rewards.balanceOf(participantAddress)).to.equal(0, 'There should be no tokens to claim initially');
 
-      await expect(rewards.connect(participant).claim()).to.revertedWith('VM Exception');
+      await expect(rewards.connect(participant).claim()).to.revertedWith('revert you have no tokens to claim');
     });
 
     it('Transfer all rewards when time elapsed', async () => {
       await token.mock.balanceOf.withArgs(rewards.address).returns(1001);
       await token.mock.transfer.withArgs(participantAddress, 1000).returns(true);
 
-      await rewards.startDistribution(token.address, 1, [participantAddress], [1000], [10]);
+      await rewards.startDistribution(token.address, 1, [participantAddress], [1000], [10], [0]);
 
       expect(await rewards.balanceOf(participantAddress)).to.equal(1000, 'balanceOf returns all tokens');
       expect(cloneReward(await rewards.rewards(participantAddress)))
@@ -148,7 +197,7 @@ describe('Rewards', async () => {
       expect(await rewards.balanceOf(participantAddress)).to.equal(0, 'balance is 0 when all tokens are claimed');
       expect(cloneReward(await rewards.rewards(participantAddress)))
         .to.eql(
-          newReward(1000, 10, 1000),
+        newReward(1000, 10, 1000),
         'all rewards are claimed; so, tokens paid equal to the total number of tokens'
       );
     });
@@ -162,14 +211,14 @@ describe('Rewards', async () => {
 
       const startTime = prevTimestamp + 5, duration = 23, amount = 61;
 
-      expect(await rewards.startDistribution(token.address, startTime, [participantAddress], [amount], [duration]))
+      expect(await rewards.startDistribution(token.address, startTime, [participantAddress], [amount], [duration], [0]))
         .to.emit(rewards, 'LogBurnKey');
 
       let claimed = 0;
       for (let i = 0; i <= duration + (startTime - prevTimestamp); ++i) {
         const {timestamp} = await ethers.provider.getBlock('latest');
 
-        const progress = Math.min(Math.max(0,  (timestamp - startTime + 1) / duration), 1);
+        const progress = Math.min(Math.max(0, (timestamp - startTime + 1) / duration), 1);
         const toClaim = Math.floor(progress * amount) - claimed;
 
         if (toClaim > 0) {
@@ -191,9 +240,10 @@ describe('Rewards', async () => {
       await token.mock.balanceOf.withArgs(rewards.address).returns(1001);
       await token.mock.transfer.withArgs(participantAddress, 1000).returns(false);
 
-      await rewards.startDistribution(token.address, 1, [participantAddress], [1000], [10]);
+      await rewards.startDistribution(token.address, 1, [participantAddress], [1000], [10], [0]);
 
-      await expect(rewards.connect(participant).claim()).to.revertedWith('VM Exception');
+      await expect(rewards.connect(participant).claim())
+        .to.revertedWith('revert SafeERC20: ERC20 operation did not succeed');
     });
   });
 
