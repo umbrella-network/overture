@@ -1,36 +1,33 @@
 //SPDX-License-Identifier: MIT
-pragma solidity >=0.7.5;
+pragma solidity 0.7.5;
 
 // Inheritance
 import "@openzeppelin/contracts/math/SafeMath.sol";
-
-import "../lib/Strings.sol";
 
 /// @title   Multi Signature base on Power
 /// @author  umb.network
 /// @notice  It's based on https://github.com/gnosis/MultiSigWallet but modified in a way to support power of vote.
 ///          It has option to assign power to owners, so we can have "super owner(s)".
 abstract contract PowerMultiSig {
-    using Strings for string;
-    using SafeMath for uint;
+    using SafeMath for uint256;
 
-    uint constant public MAX_OWNER_COUNT = 50;
+    uint256 constant public MAX_OWNER_COUNT = 5;
 
     struct Transaction {
         address destination;
-        uint value;
-        uint executed;
+        uint256 value;
+        uint256 executed;
         bytes data;
     }
 
-    mapping(uint => Transaction) public transactions;
-    mapping(uint => mapping(address => bool)) public confirmations;
-    mapping(address => uint) public ownersPowers;
+    mapping(uint256 => Transaction) public transactions;
+    mapping(uint256 => mapping(address => bool)) public confirmations;
+    mapping(address => uint256) public ownersPowers;
     address[] public owners;
 
-    uint public requiredPower;
-    uint public totalCurrentPower;
-    uint public transactionCount;
+    uint256 public requiredPower;
+    uint256 public totalCurrentPower;
+    uint256 public transactionCount;
 
     // ========== MODIFIERS ========== //
 
@@ -49,27 +46,23 @@ abstract contract PowerMultiSig {
         _;
     }
 
-    modifier whenTransactionExists(uint _transactionId) {
-        require(transactions[_transactionId].destination != address(0),
-            string("transaction ").appendNumber(_transactionId).appendString(" does not exists"));
+    modifier whenTransactionExists(uint256 _transactionId) {
+        require(transactions[_transactionId].destination != address(0), "transaction does not exists");
         _;
     }
 
-    modifier whenConfirmedBy(uint _transactionId, address _owner) {
-        require(confirmations[_transactionId][_owner],
-            string("transaction ").appendNumber(_transactionId).appendString(" NOT confirmed by owner"));
+    modifier whenConfirmedBy(uint256 _transactionId, address _owner) {
+        require(confirmations[_transactionId][_owner], "transaction NOT confirmed by owner");
         _;
     }
 
-    modifier notConfirmedBy(uint _transactionId, address _owner) {
-        require(!confirmations[_transactionId][_owner],
-            string("transaction ").appendNumber(_transactionId).appendString(" already confirmed by owner"));
+    modifier notConfirmedBy(uint256 _transactionId, address _owner) {
+        require(!confirmations[_transactionId][_owner], "transaction already confirmed by owner");
         _;
     }
 
-    modifier whenNotExecuted(uint _transactionId) {
-        require(transactions[_transactionId].executed == 0,
-            string("transaction ").appendNumber(_transactionId).appendString(" already executed"));
+    modifier whenNotExecuted(uint256 _transactionId) {
+        require(transactions[_transactionId].executed == 0, "transaction already executed");
         _;
     }
 
@@ -78,7 +71,7 @@ abstract contract PowerMultiSig {
         _;
     }
 
-    modifier validRequirement(uint _totalOwnersCount, uint _totalPowerSum, uint _requiredPower) {
+    modifier validRequirement(uint256 _totalOwnersCount, uint256 _totalPowerSum, uint256 _requiredPower) {
         require(_totalPowerSum >= _requiredPower, "owners do NOT have enough power");
         require(_totalOwnersCount <= MAX_OWNER_COUNT, "too many owners");
         require(_requiredPower != 0, "_requiredPower is zero");
@@ -91,9 +84,9 @@ abstract contract PowerMultiSig {
     constructor(address[] memory _owners, uint256[] memory _powers, uint256 _requiredPower)
     validRequirement(_owners.length, sum(_powers), _requiredPower)
     {
-        uint sumOfPowers = 0;
+        uint256 sumOfPowers = 0;
 
-        for (uint i = 0; i < _owners.length; i++) {
+        for (uint256 i = 0; i < _owners.length; i++) {
             require(ownersPowers[_owners[i]] == 0, "owner already exists");
             require(_owners[i] != address(0), "owner is empty");
             require(_powers[i] != 0, "power is empty");
@@ -109,11 +102,7 @@ abstract contract PowerMultiSig {
 
     // ========== MODIFIERS ========== //
 
-    receive() external payable {
-        if (msg.value > 0) emit LogDeposit(msg.sender, msg.value);
-    }
-
-    function addOwner(address _owner, uint _power)
+    function addOwner(address _owner, uint256 _power)
     public
     onlyWallet
     whenOwnerDoesNotExist(_owner)
@@ -131,7 +120,7 @@ abstract contract PowerMultiSig {
 
     function removeOwner(address _owner) public onlyWallet whenOwnerExists(_owner)
     {
-        uint ownerPower = ownersPowers[_owner];
+        uint256 ownerPower = ownersPowers[_owner];
         require(
             totalCurrentPower - ownerPower >= requiredPower,
             "can't remove owner, because there will be not enough power left"
@@ -140,7 +129,7 @@ abstract contract PowerMultiSig {
         ownersPowers[_owner] = 0;
         totalCurrentPower = totalCurrentPower.sub(ownerPower);
 
-        for (uint i = 0; i < owners.length - 1; i++) {
+        for (uint256 i = 0; i < owners.length - 1; i++) {
             if (owners[i] == _owner) {
                 owners[i] = owners[owners.length - 1];
                 break;
@@ -148,10 +137,6 @@ abstract contract PowerMultiSig {
         }
 
         owners.pop();
-
-        // if (requiredPower > owners.length) {
-        //   changeRequiredPower(requiredPower - ownerPower);
-        // }
 
         emit LogOwnerRemoval(_owner);
     }
@@ -162,14 +147,14 @@ abstract contract PowerMultiSig {
     whenOwnerExists(_oldOwner)
     whenOwnerDoesNotExist(_newOwner)
     {
-        for (uint i = 0; i < owners.length; i++) {
+        for (uint256 i = 0; i < owners.length; i++) {
             if (owners[i] == _oldOwner) {
                 owners[i] = _newOwner;
                 break;
             }
         }
 
-        uint power = ownersPowers[_oldOwner];
+        uint256 power = ownersPowers[_oldOwner];
         ownersPowers[_newOwner] = power;
         ownersPowers[_oldOwner] = 0;
 
@@ -177,7 +162,7 @@ abstract contract PowerMultiSig {
         emit LogOwnerAddition(_newOwner, power);
     }
 
-    function changeRequiredPower(uint _newPower)
+    function changeRequiredPower(uint256 _newPower)
     public
     onlyWallet
     validRequirement(owners.length, totalCurrentPower, _newPower)
@@ -186,15 +171,15 @@ abstract contract PowerMultiSig {
         emit LogPowerChange(_newPower);
     }
 
-    function submitTransaction(address _destination, uint _value, bytes memory _data)
+    function submitTransaction(address _destination, uint256 _value, bytes memory _data)
     public
-    returns (uint transactionId)
+    returns (uint256 transactionId)
     {
         transactionId = _addTransaction(_destination, _value, _data);
         confirmTransaction(transactionId);
     }
 
-    function confirmTransaction(uint _transactionId)
+    function confirmTransaction(uint256 _transactionId)
     public
     whenOwnerExists(msg.sender)
     whenTransactionExists(_transactionId)
@@ -207,7 +192,7 @@ abstract contract PowerMultiSig {
 
     /// @dev Allows an owner to revoke a confirmation for a transaction.
     /// @param _transactionId Transaction ID.
-    function revokeLogConfirmation(uint _transactionId)
+    function revokeLogConfirmation(uint256 _transactionId)
     public
     whenOwnerExists(msg.sender)
     whenConfirmedBy(_transactionId, msg.sender)
@@ -219,7 +204,7 @@ abstract contract PowerMultiSig {
 
     /// @dev Allows anyone to execute a confirmed transaction.
     /// @param _transactionId Transaction ID.
-    function executeTransaction(uint _transactionId)
+    function executeTransaction(uint256 _transactionId)
     public
     whenOwnerExists(msg.sender)
     whenConfirmedBy(_transactionId, msg.sender)
@@ -228,79 +213,51 @@ abstract contract PowerMultiSig {
         if (isConfirmed(_transactionId)) {
             Transaction storage txn = transactions[_transactionId];
             txn.executed = block.timestamp;
-            if (external_call(txn.destination, txn.value, txn.data.length, txn.data))
-                emit LogExecution(_transactionId);
-            else {
-                emit LogExecutionFailure(_transactionId);
-                txn.executed = 0;
-            }
+
+            (bool success, bytes memory returnedData) = txn.destination.call(txn.data);
+
+            require(success, string(abi.encodePacked("executeTransaction failed: ", string(returnedData))));
+
+            emit LogExecution(_transactionId, returnedData);
         }
     }
 
-    // call has been separated into its own function in order to take advantage
-    // of the Solidity's code generator to produce a loop that copies tx.data into memory.
-    function external_call(
-        address _destination,
-        uint _value,
-        uint _dataLength,
-        bytes memory _data
-    ) internal returns (bool) {
-        bool result;
-
-        assembly {
-            let x := mload(0x40) // "Allocate" memory for output
-                                 // (0x40 is where "free memory" pointer is stored by convention)
-            let d := add(_data, 32) // First 32 bytes are the padded length of data, so exclude that
-            result := call(
-            sub(gas(), 34710), // 34710 is the value that solidity is currently emitting
-            // It includes callGas (700) + callVeryLow (3, to pay for SUB) + callValueTransferGas (9000) +
-            // callNewAccountGas (25000, in case the destination address does not exist and needs creating)
-            _destination,
-            _value,
-            d,
-            _dataLength, // Size of the input (in bytes) - this is what fixes the padding problem
-            x,
-            0                  // Output is ignored, therefore the output size is zero
-            )
-        }
-
-        // hack for getting result value, for some reason wo this, it was always return false
-        // @todo why result value is not passed if I do not add require?
-        require(result, "tx failed on destination contract");
-
-        return result;
-    }
-
-    function _addTransaction(address _destination, uint _value, bytes memory _data)
+    function _addTransaction(address _destination, uint256 _value, bytes memory _data)
     internal
     notNull(_destination)
-    returns (uint transactionId)
+    returns (uint256 transactionId)
     {
         transactionId = transactionCount;
+
         transactions[transactionId] = Transaction({
-        destination : _destination,
-        value : _value,
-        data : _data,
-        executed : 0
+            destination : _destination,
+            value : _value,
+            data : _data,
+            executed : 0
         });
+
         transactionCount += 1;
         emit LogSubmission(transactionId);
     }
 
     // ========== VIEWS ========== //
 
-    function sum(uint[] memory _numbers) public pure returns (uint total) {
-        uint numbersCount = _numbers.length;
+    function ownersCount() public view returns (uint256) {
+        return owners.length;
+    }
 
-        for (uint i = 0; i < numbersCount; i++) {
+    function sum(uint256[] memory _numbers) public pure returns (uint256 total) {
+        uint256 numbersCount = _numbers.length;
+
+        for (uint256 i = 0; i < numbersCount; i++) {
             total += _numbers[i];
         }
     }
 
-    function isConfirmed(uint _transactionId) public view returns (bool) {
-        uint power = 0;
+    function isConfirmed(uint256 _transactionId) public view returns (bool) {
+        uint256 power = 0;
 
-        for (uint i = 0; i < owners.length; i++) {
+        for (uint256 i = 0; i < owners.length; i++) {
             if (confirmations[_transactionId][owners[i]]) {
                 power += ownersPowers[owners[i]];
             }
@@ -313,18 +270,18 @@ abstract contract PowerMultiSig {
         return false;
     }
 
-    function isExceuted(uint _transactionId) public view returns (bool) {
+    function isExceuted(uint256 _transactionId) public view returns (bool) {
         return transactions[_transactionId].executed != 0;
     }
 
-    function getTransactionShort(uint _transactionId)
-    public view returns (address destination, uint value, uint executed) {
+    function getTransactionShort(uint256 _transactionId)
+    public view returns (address destination, uint256 value, uint256 executed) {
         Transaction memory t = transactions[_transactionId];
         return (t.destination, t.value, t.executed);
     }
 
-    function getTransaction(uint _transactionId)
-    public view returns (address destination, uint value, uint executed, bytes memory data) {
+    function getTransaction(uint256 _transactionId)
+    public view returns (address destination, uint256 value, uint256 executed, bytes memory data) {
         Transaction memory t = transactions[_transactionId];
         return (t.destination, t.value, t.executed, t.data);
     }
@@ -335,9 +292,9 @@ abstract contract PowerMultiSig {
     /// @dev Returns number of confirmations of a transaction.
     /// @param _transactionId Transaction ID.
     /// @return count Number of confirmations.
-    function getLogConfirmationCount(uint _transactionId) public view returns (uint count)
+    function getLogConfirmationCount(uint256 _transactionId) public view returns (uint256 count)
     {
-        for (uint i = 0; i < owners.length; i++) {
+        for (uint256 i = 0; i < owners.length; i++) {
             if (confirmations[_transactionId][owners[i]]) {
                 count += 1;
             }
@@ -348,9 +305,9 @@ abstract contract PowerMultiSig {
     /// @param _pending Include pending transactions.
     /// @param _executed Include executed transactions.
     /// @return count Total number of transactions after filters are applied.
-    function getTransactionCount(bool _pending, bool _executed) public view returns (uint count)
+    function getTransactionCount(bool _pending, bool _executed) public view returns (uint256 count)
     {
-        for (uint i = 0; i < transactionCount; i++) {
+        for (uint256 i = 0; i < transactionCount; i++) {
             if (_pending && transactions[i].executed == 0 || _executed && transactions[i].executed != 0) {
                 count += 1;
             }
@@ -360,14 +317,14 @@ abstract contract PowerMultiSig {
     /// @dev Returns array with owner addresses, which confirmed transaction.
     /// @param _transactionId Transaction ID.
     /// @return _confirmations Returns array of owner addresses.
-    function getLogConfirmations(uint _transactionId)
+    function getLogConfirmations(uint256 _transactionId)
     public
     view
     returns (address[] memory _confirmations)
     {
         address[] memory confirmationsTemp = new address[](owners.length);
-        uint count = 0;
-        uint i;
+        uint256 count = 0;
+        uint256 i;
 
         for (i = 0; i < owners.length; i++) {
             if (confirmations[_transactionId][owners[i]]) {
@@ -389,38 +346,36 @@ abstract contract PowerMultiSig {
     /// @param _pending Include pending transactions.
     /// @param _executed Include executed transactions.
     /// @return _transactionIds Returns array of transaction IDs.
-    function getTransactionIds(uint _from, uint _to, bool _pending, bool _executed)
+    function getTransactionIds(uint256 _from, uint256 _to, bool _pending, bool _executed)
     public
     view
-    returns (uint[] memory _transactionIds)
+    returns (uint256[] memory _transactionIds)
     {
-        uint[] memory transactionIdsTemp = new uint[](transactionCount);
-        uint count = 0;
-        uint i;
+        uint256[] memory transactionIdsTemp = new uint256[](_to - _from);
+        uint256 count = 0;
+        uint256 i;
 
-        for (i = 0; i < transactionCount; i++) {
+        for (i = _from; i < _to; i++) {
             if (_pending && transactions[i].executed == 0 || _executed && transactions[i].executed != 0) {
                 transactionIdsTemp[count] = i;
                 count += 1;
             }
         }
 
-        _transactionIds = new uint[](_to - _from);
+        _transactionIds = new uint256[](count);
 
-        for (i = _from; i < _to; i++) {
-            _transactionIds[i - _from] = transactionIdsTemp[i];
+        for (i = 0; i < count; i++) {
+            _transactionIds[i] = transactionIdsTemp[i];
         }
     }
 
     // ========== EVENTS ========== //
 
-    event LogConfirmation(address indexed sender, uint indexed transactionId);
-    event LogRevocation(address indexed sender, uint indexed transactionId);
-    event LogSubmission(uint indexed transactionId);
-    event LogExecution(uint indexed transactionId);
-    event LogExecutionFailure(uint indexed transactionId);
-    event LogDeposit(address indexed sender, uint value);
-    event LogOwnerAddition(address indexed owner, uint power);
+    event LogConfirmation(address indexed sender, uint256 indexed transactionId);
+    event LogRevocation(address indexed sender, uint256 indexed transactionId);
+    event LogSubmission(uint256 indexed transactionId);
+    event LogExecution(uint256 indexed transactionId, bytes returnedData);
+    event LogOwnerAddition(address indexed owner, uint256 power);
     event LogOwnerRemoval(address indexed owner);
-    event LogPowerChange(uint power);
+    event LogPowerChange(uint256 power);
 }

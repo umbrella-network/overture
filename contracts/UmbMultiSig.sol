@@ -27,6 +27,28 @@ contract UmbMultiSig is PowerMultiSig {
 
     // ========== MUTATIVE FUNCTIONS ========== //
 
+    // ========== helpers for: MultiSig
+
+    function submitAddOwner(address _owner, uint256 _power) public returns (uint) {
+        bytes memory data = abi.encodeWithSignature("addOwner(address,uint256)", _owner, _power);
+        return submitTransaction(address(this), 0, data);
+    }
+
+    function submitRemoveOwner(address _owner) public returns (uint) {
+        bytes memory data = abi.encodeWithSignature("removeOwner(address)", _owner);
+        return submitTransaction(address(this), 0, data);
+    }
+
+    function submitReplaceOwner(address _old, address _new) public returns (uint) {
+        bytes memory data = abi.encodeWithSignature("replaceOwner(address,address)", _old, _new);
+        return submitTransaction(address(this), 0, data);
+    }
+
+    function submitChangeRequiredPower(uint256 _power) public returns (uint) {
+        bytes memory data = abi.encodeWithSignature("changeRequiredPower(uint256)", _power);
+        return submitTransaction(address(this), 0, data);
+    }
+
     // ========== helpers for: UMB, rUMB
 
     function submitTokenMintTx(address _destination, address _holder, uint _amount) public returns (uint) {
@@ -39,39 +61,16 @@ contract UmbMultiSig is PowerMultiSig {
     function submitUMBSetRewardTokensTx(
         address _destination,
         address[] memory _tokens,
-        bool[] memory _statuses
-    ) public returns (uint) {
+        bool[] calldata _statuses
+    ) external returns (uint) {
         bytes memory data = abi.encodeWithSignature("setRewardTokens(address[],bool[])", _tokens, _statuses);
-        return submitTransaction(_destination, 0, data);
-    }
-
-    // ========== helpers for: Auction
-
-    function submitAuctionStartTx(address _destination) public returns (uint) {
-        bytes memory data = abi.encodeWithSignature("start()");
-        return submitTransaction(_destination, 0, data);
-    }
-
-    function submitAuctionSetupTx(
-        address _destination,
-        uint256 _minimalEthPricePerToken,
-        uint256 _minimalRequiredLockedEth,
-        uint256 _maximumLockedEth
-    ) public returns (uint) {
-        bytes memory data = abi.encodeWithSignature(
-            "setup(uint256,uint256,uint256)",
-            _minimalEthPricePerToken,
-            _minimalRequiredLockedEth,
-            _maximumLockedEth
-        );
-
         return submitTransaction(_destination, 0, data);
     }
 
     // ========== helpers for: rUMB
 
-    function submitRUMBStartSwapNowTx(address _destination) public returns (uint) {
-        bytes memory data = abi.encodeWithSignature("startSwapNow()");
+    function submitRUMBStartEarlySwapTx(address _destination) public returns (uint) {
+        bytes memory data = abi.encodeWithSignature("startEarlySwap()");
         return submitTransaction(_destination, 0, data);
     }
 
@@ -114,6 +113,11 @@ contract UmbMultiSig is PowerMultiSig {
 
     function submitStakingRewardsNotifyRewardAmountTx(address _destination, uint _amount) public returns (uint) {
         bytes memory data = abi.encodeWithSignature("notifyRewardAmount(uint256)", _amount);
+        return submitTransaction(_destination, 0, data);
+    }
+
+    function submitStakingRewardsFinishFarmingTx(address _destination) public returns (uint) {
+        bytes memory data = abi.encodeWithSignature("finishFarming()");
         return submitTransaction(_destination, 0, data);
     }
 

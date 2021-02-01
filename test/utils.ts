@@ -1,5 +1,5 @@
-import {BigNumber} from 'ethers';
 import {ethers} from 'hardhat';
+import {BigNumber} from 'ethers';
 
 export const numberToWei = (n: number | string, decimals = 18): string => {
   const parts = n.toString(10).split('.');
@@ -18,3 +18,5 @@ export const blockTimestamp = async (): Promise<number> => {
   const block = await ethers.provider.getBlock('latest');
   return block.timestamp;
 };
+
+export const ethBalanceOf = async (wallet: string): Promise<BigNumber> => ethers.provider.getBalance(wallet)
