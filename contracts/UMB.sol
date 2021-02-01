@@ -1,8 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.7.5;
 
-// import "@nomiclabs/buidler/console.sol";
-
 // Inheritance
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -66,7 +64,7 @@ contract UMB is MintableToken, ISwapReceiver {
         emit LogSetRewardTokens(_tokens, _statuses);
     }
 
-    function swapMint(address _holder, uint256 _amount) public override assertMaxSupply(_amount) {
+    function swapMint(address _holder, uint256 _amount) external override assertMaxSupply(_amount) {
         require(rewardsTokens[_msgSender()], "only reward token can be swapped");
 
         _mint(_holder, _amount);

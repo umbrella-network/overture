@@ -52,7 +52,7 @@ describe('Rewards', async () => {
     expect(await rewards.owner()).to.equal(participantAddress, 'Rewards contract should belong to another address');
   });
 
-  describe('.startDistribution()', () => {
+  describe('.startDistribution()', async () => {
     it('Participant array should be non-empty', async () => {
       await expect(rewards.startDistribution(ethers.constants.AddressZero, 1, [], [1000], [10]))
         .to.revertedWith('VM Exception');
@@ -91,7 +91,7 @@ describe('Rewards', async () => {
     });
   });
 
-  describe('.balanceOf()', () => {
+  describe('.balanceOf()', async () => {
     it('Reward balance increases over time', async () => {
       await token.mock.balanceOf.withArgs(rewards.address).returns(1000);
 
