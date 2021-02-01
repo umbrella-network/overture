@@ -9,3 +9,4 @@ flattened_*
 .env*
 
 coverage/
+coverage.json

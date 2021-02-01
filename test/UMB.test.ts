@@ -20,27 +20,62 @@ describe('UMB', async () => {
   let rewardToken1: Contract, rewardToken2: Contract;
 
   beforeEach(async () => {
-    ({rewardToken1, rewardToken2, initialBalance, maxAllowedTotalSupply, owner, holder, UMB, ownerAddress, holderAddress} = await setup(0, 100));
+    ({
+      rewardToken1,
+      rewardToken2,
+      initialBalance,
+      maxAllowedTotalSupply,
+      owner,
+      holder,
+      UMB,
+      ownerAddress,
+      holderAddress
+    } = await setup(0, 100));
   });
 
   const setup = async (initialBalance: number, maxAllowedTotalSupply: number) => {
     const [owner, holder] = await ethers.getSigners();
 
     const contract = await ethers.getContractFactory('UMB');
-    const UMB = await contract.deploy(owner.address, holder.address, initialBalance, maxAllowedTotalSupply, name, symbol);
+    const UMB = await contract.deploy(
+      owner.address,
+      holder.address,
+      initialBalance,
+      maxAllowedTotalSupply,
+      name,
+      symbol
+    );
+
     await UMB.deployed();
 
     const rewardToken1 = await deployMockContract(owner, IERC20.abi);
-
     const rewardToken2 = await deployMockContract(owner, IERC20.abi);
 
-    return {initialBalance, maxAllowedTotalSupply, owner, ownerAddress: owner.address, holderAddress: holder.address, holder, UMB, rewardToken1, rewardToken2};
+    return {
+      initialBalance,
+      maxAllowedTotalSupply,
+      owner,
+      ownerAddress: owner.address,
+      holderAddress: holder.address,
+      holder,
+      UMB,
+      rewardToken1,
+      rewardToken2
+    };
   };
 
   describe('.UMB()', () => {
     describe('with an initial holder', () => {
       beforeEach(async () => {
-        ({initialBalance, maxAllowedTotalSupply, owner, holder, UMB, ownerAddress, holderAddress} = await setup(50, 100));
+        ({
+          initialBalance,
+          maxAllowedTotalSupply,
+          owner,
+          holder,
+          UMB,
+          ownerAddress,
+          holderAddress
+        } = await setup(50, 100));
       });
 
       it('Should create a contract with an assigned owner', async () => {
@@ -88,28 +123,33 @@ describe('UMB', async () => {
       const addresses = [rewardToken1.address, rewardToken2.address],
         statuses = [true, false];
 
-      await expect(UMB.setRewardTokens(addresses, statuses)).to.emit(UMB, 'LogSetRewardTokens').withArgs(addresses, statuses);
+      await expect(UMB.setRewardTokens(addresses, statuses))
+        .to.emit(UMB, 'LogSetRewardTokens').withArgs(addresses, statuses);
     });
 
     it('Cannot pass an empty array with reward tokens', async () => {
-      await expect(UMB.setRewardTokens([], [])).to.revertedWith('revert please pass a positive number of reward tokens');
+      await expect(UMB.setRewardTokens([], []))
+        .to.revertedWith('revert please pass a positive number of reward tokens');
     });
 
     it('Cannot pass a different number of addresses and statuses', async () => {
-      await expect(UMB.setRewardTokens([rewardToken1.address], [])).to.revertedWith('revert please pass same number of tokens and statuses');
+      await expect(UMB.setRewardTokens([rewardToken1.address], []))
+        .to.revertedWith('revert please pass same number of tokens and statuses');
     });
 
     it('Only the owner can set reward tokens', async () => {
       const addresses = [rewardToken1.address, rewardToken2.address],
         statuses = [true, false];
 
-      await expect(UMB.connect(holder).setRewardTokens(addresses, statuses)).to.revertedWith('revert Ownable: caller is not the owner');
+      await expect(UMB.connect(holder).setRewardTokens(addresses, statuses))
+        .to.revertedWith('revert Ownable: caller is not the owner');
     });
   });
 
   describe('.mint()', async () => {
     it('The owner can mint tokens', async () => {
-      await expect(UMB.mint(holderAddress, maxAllowedTotalSupply)).to.emit(UMB, 'Transfer').withArgs(ethers.constants.AddressZero, holderAddress, maxAllowedTotalSupply);
+      await expect(UMB.mint(holderAddress, maxAllowedTotalSupply))
+        .to.emit(UMB, 'Transfer').withArgs(ethers.constants.AddressZero, holderAddress, maxAllowedTotalSupply);
     });
 
     it('The total supply changes after some tokens were minted', async () => {
@@ -123,11 +163,13 @@ describe('UMB', async () => {
     });
 
     it('The owner cannot mint more tokens than the maximum supply', async () => {
-      await expect(UMB.mint(holderAddress, maxAllowedTotalSupply + 1)).to.revertedWith('revert total supply limit exceeded');
+      await expect(UMB.mint(holderAddress, maxAllowedTotalSupply + 1))
+        .to.revertedWith('revert total supply limit exceeded');
     });
 
     it('Nobody else can mint tokens', async () => {
-      await expect(UMB.connect(holder).mint(holderAddress, maxAllowedTotalSupply)).to.revertedWith('revert Ownable: caller is not the owner');
+      await expect(UMB.connect(holder).mint(holderAddress, maxAllowedTotalSupply))
+        .to.revertedWith('revert Ownable: caller is not the owner');
     });
   });
 
@@ -137,7 +179,8 @@ describe('UMB', async () => {
     });
 
     it('Anyone can burn tokens', async () => {
-      await expect(UMB.connect(holder).burn(50)).to.emit(UMB, 'Transfer').withArgs(holderAddress, ethers.constants.AddressZero, 50);
+      await expect(UMB.connect(holder).burn(50)).to.emit(UMB, 'Transfer')
+        .withArgs(holderAddress, ethers.constants.AddressZero, 50);
     });
 
     it('Nobody can burn more tokens than they have', async () => {
@@ -154,15 +197,18 @@ describe('UMB', async () => {
     beforeEach(async () => {
       ({holder, holderAddress, UMB} = await setup(50, 100));
 
-      await expect(UMB.setRewardTokens([holderAddress], [true])).to.emit(UMB, 'LogSetRewardTokens').withArgs([holderAddress], [true]);
+      await expect(UMB.setRewardTokens([holderAddress], [true]))
+        .to.emit(UMB, 'LogSetRewardTokens').withArgs([holderAddress], [true]);
     });
 
     it('An assigned caller can mint tokens', async () => {
-      await expect(UMB.connect(holder).swapMint(ownerAddress, 50)).to.emit(UMB, 'Transfer').withArgs(ethers.constants.AddressZero, ownerAddress, 50);
+      await expect(UMB.connect(holder).swapMint(ownerAddress, 50))
+        .to.emit(UMB, 'Transfer').withArgs(ethers.constants.AddressZero, ownerAddress, 50);
     });
 
     it('Cannot mint more than the maximum supply', async () => {
-      await expect(UMB.connect(holder).swapMint(holderAddress, 51)).to.revertedWith('revert total supply limit exceeded');
+      await expect(UMB.connect(holder).swapMint(holderAddress, 51))
+        .to.revertedWith('revert total supply limit exceeded');
     });
 
     it('Unassigned caller cannot mint tokens', async () => {
@@ -171,7 +217,11 @@ describe('UMB', async () => {
   });
 
   it('Cannot send ETH to the contract', async () => {
-    await expect(owner.sendTransaction({from: ownerAddress, to: UMB.address, value: '0x20'})).to.revertedWith('Transaction reverted');
+    await expect(owner.sendTransaction({
+      from: ownerAddress,
+      to: UMB.address,
+      value: '0x20'
+    })).to.revertedWith('Transaction reverted');
   });
 
   it('Can transfer ownership to another address', async () => {

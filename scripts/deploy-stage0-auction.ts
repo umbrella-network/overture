@@ -62,7 +62,12 @@ async function main() {
 
     if ((await multiSig.ownersPowers(deployer)).toString() === '0') {
       console.log(validationMark());
-      console.log('Owner for MultiSig is not set or it is invalid, so you need to mint tokens for Auction via Etherscan');
+
+      console.log(
+        'Owner for MultiSig is not set or it is invalid,',
+        'so you need to mint tokens for Auction via Etherscan'
+      );
+
       return;
     }
 
@@ -77,7 +82,10 @@ async function main() {
 
     console.log('Balance of auction contract:', (await umb.balanceOf(CONFIG.auction.address)).toString());
   } else {
-    console.log('`CONFIG.auction.amountOfTokensForAuction` is empty, so script did not mint tokens for auction - do it via Etherscan');
+    console.log(
+      '`CONFIG.auction.amountOfTokensForAuction` is empty,',
+      'so script did not mint tokens for auction - do it via Etherscan'
+    );
   }
 }
 

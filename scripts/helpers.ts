@@ -22,7 +22,7 @@ export const getDefaultOwner = async (): Promise<string> => {
   return CONFIG.multiSig.address || deployer;
 };
 
-export const getProvider = () => {
+export const getProvider = (): Provider => {
   if (isLocalNetwork()) {
     // const currentProvider = new hre.Web3.providers.HttpProvider('http://localhost:8545');
     // hre.web3.setProvider(new hre.Web3.providers.HttpProvider('http://localhost:8545'));
@@ -49,16 +49,20 @@ export const waitForTx = async (txHash: string, provider: Provider): Promise<Tra
   return receipt;
 };
 
-export const toBytes32 = (str: string) => {
+export const toBytes32 = (str: string): string => {
   const bytes = Buffer.from(str).toString('hex');
   return `0x${bytes}${'0'.repeat(64 - bytes.length)}`;
 };
 
-export const constructorAbi = (types: string[], values: any[]) => {
+export const constructorAbi = (types: string[], values: any[]): string => {
   return ethers.utils.defaultAbiCoder.encode(types, values).replace('0x', '');
 };
 
-const extractDataFromIndexedTopicLog = (logName: string, dataTypes: Record<string, string>[], logs: Log[]): Record<string, any> | undefined => {
+const extractDataFromIndexedTopicLog = (
+  logName: string,
+  dataTypes: Record<string, string>[],
+  logs: Log[]
+): Record<string, any> | undefined => {
   let found: string[] = [];
   const types: string[] = dataTypes.reduce((acc: string[], rec) => acc.concat(Object.values(rec)[0]), []);
   const nameHash = ethers.utils.keccak256(Buffer.from(`${logName}(${types.join(',')})`));
@@ -113,3 +117,9 @@ export const oneMonth = 60 * 60 * 24 * 365 / 12;
 export const oneYear = 60 * 60 * 24 * 365;
 
 export const currentTimestamp = Math.round(Date.now() / 1000);
+
+export const getArtifacts = (...contractsNames: string[]): any[] => {
+  return contractsNames.map(name =>
+    require(`${__dirname}/../artifacts/contracts/${name}.sol/${name}.json`)
+  );
+};

@@ -92,8 +92,11 @@ const main = async () => {
 
       if (await wasTxExecutedByMultiSig(multiSig, txId)) {
         console.log('Distribution started at', (await rewards.distributionStartTime()).toString());
-        console.log('Key burned for Rewards contract?', validationMark(await rewards.owner() === ethers.constants.AddressZero));
-        console.log('participantsCount valid?', validationMark((await rewards.participantsCount()).toString() === participants.length.toString(10)));
+        console.log('Key burned for Rewards contract?',
+          validationMark(await rewards.owner() === ethers.constants.AddressZero));
+
+        console.log('participantsCount valid?',
+          validationMark((await rewards.participantsCount()).toString() === participants.length.toString(10)));
       } else {
         console.log('start of Distribution needs to be confirm using multiwallet, TX ID:', txId);
       }
