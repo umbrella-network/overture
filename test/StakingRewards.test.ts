@@ -52,17 +52,19 @@ describe('StakingRewards', () => {
     to?: string,
     amount?: string | number | BigNumber,
     returns = true
-  ) => {
-    from && to !== undefined && amount !== undefined
-      ? await token.mock.transferFrom.withArgs(await from.getAddress(), to, amount).returns(returns)
-      : await token.mock.transferFrom.returns(returns);
+  ): Promise<void> => {
+    return from && to !== undefined && amount !== undefined
+      ? token.mock.transferFrom.withArgs(await from.getAddress(), to, amount).returns(returns)
+      : token.mock.transferFrom.returns(returns);
   };
 
-  const mockTransfer = async (token: Contract, to?: Signer, amount?: string | number | BigNumber, returns = true) => {
-    to !== undefined && amount !== undefined
-      ? await token.mock.transfer.withArgs(await to.getAddress(), amount).returns(returns)
-      : await token.mock.transfer.returns(returns);
-  };
+  const mockTransfer = async (
+    token: Contract,
+    to: Signer,
+    amount: string | number | BigNumber,
+    returns = true
+  ): Promise<void> => token.mock.transfer.withArgs(await to.getAddress(), amount).returns(returns)
+
 
   beforeEach(async () => {
     ({rewardsDistributor, umb, rUmb, contract, staker1, staker2} = await setup());
