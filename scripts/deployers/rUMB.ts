@@ -1,18 +1,24 @@
-import CONFIG from '../../config/config';
 import hre from 'hardhat';
 import {Contract} from '@ethersproject/contracts';
 
-import {constructorAbi} from '../helpers';
+import CONFIG from '../../config/config';
+import {constructorAbi, getArtifacts, getProvider} from '../helpers';
 
-const { ethers } = hre;
+const {ethers} = hre;
+const [rUmb] = getArtifacts('rUMB')
 
-export const deployRUMB1 = async (owner: string, libStrings: string): Promise<Contract> => {
+export const getRUmb1Contract = async (): Promise<Contract> => {
+  if (!CONFIG.stage1.rUmb1.address) {
+    throw Error('rUMB1 address is empty');
+  }
+
+  const deployer = (await ethers.getSigners())[<number>hre.config.namedAccounts.deployer];
+  return new ethers.Contract(CONFIG.stage1.rUmb1.address, rUmb.abi, getProvider()).connect(deployer);
+};
+
+export const deployRUMB1 = async (owner: string): Promise<Contract> => {
   const contractName = 'rUMB';
-  const Contract = await ethers.getContractFactory(contractName, {
-    libraries: {
-      Strings: libStrings
-    }
-  });
+  const Contract = await ethers.getContractFactory(contractName);
 
   const {stage1} = CONFIG;
 
@@ -22,21 +28,19 @@ export const deployRUMB1 = async (owner: string, libStrings: string): Promise<Co
     'uint256',
     'uint256',
     'uint256',
-    'uint256',
     'string',
     'string',
   ];
 
-   const constructorArgs = [
-     owner,
-     stage1.rUmb.initialHolder,
-     stage1.rUmb.initialBalance,
-     stage1.rUmb.maxAllowedTotalSupply,
-     stage1.rUmb.rewardId,
-     stage1.rUmb.swapDuration,
-     CONFIG.UMB.name,
-     CONFIG.UMB.symbol,
-   ];
+  const constructorArgs = [
+    owner,
+    stage1.rUmb1.initialHolder,
+    stage1.rUmb1.initialBalance,
+    stage1.rUmb1.maxAllowedTotalSupply,
+    stage1.rUmb1.swapDuration,
+    `${CONFIG.UMB.name} Reward #${stage1.rUmb1.rewardId}`,
+    `r${CONFIG.UMB.symbol}${stage1.rUmb1.rewardId}`,
+  ];
 
   const contract = await Contract.deploy(...constructorArgs);
 

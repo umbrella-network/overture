@@ -8,7 +8,7 @@ import {deployMockContract} from '@ethereum-waffle/mock-contract';
 import {Contract} from '@ethersproject/contracts';
 
 import {getArtifacts, getProvider} from '../scripts/helpers';
-import {blockTimestamp, mintBlock, numberToWei} from './utils';
+import {getBlockTimestamp, mintBlock, numberToWei} from './utils';
 
 const [UMB, rUMB, StakingRewards] = getArtifacts('UMB', 'rUMB', 'StakingRewards');
 
@@ -435,7 +435,7 @@ describe('StakingRewards', () => {
         await contract.setRewardsDuration(rewardsDuration);
         await mockRUmbBalanceOf(contract.address, contractBalance);
         await contract.connect(rewardsDistributor).notifyRewardAmount(reward);
-        startBlockTimestamp = await blockTimestamp();
+        startBlockTimestamp = await getBlockTimestamp();
       });
 
       it('allows to stop immediately and burn all tokens', async () => {
@@ -468,7 +468,7 @@ describe('StakingRewards', () => {
           // - mock.burn()
           // - contract.finishFarming()
           const futureTime = 2;
-          const rewardsPastTime = (await blockTimestamp()) - startBlockTimestamp + futureTime;
+          const rewardsPastTime = (await getBlockTimestamp()) - startBlockTimestamp + futureTime;
           const tokensForRewards = BigNumber.from(reward).mul(rewardsPastTime).div(rewardsDuration);
           const tokensToBurn = BigNumber.from(reward).sub(tokensForRewards);
 
@@ -500,7 +500,7 @@ describe('StakingRewards', () => {
               await mintBlock();
               const futureBlocks = 2; // burn + stop
 
-              expect(await blockTimestamp())
+              expect(await getBlockTimestamp())
                 .to.eq(startBlockTimestamp + rewardsDuration / 2 - futureBlocks, 'we are not in a middle of duration');
 
               staker1Earnings = await contract.earned(staker1Address);
@@ -515,7 +515,7 @@ describe('StakingRewards', () => {
                 await rUmb.mock.burn.withArgs(BigNumber.from(reward).div(2)).returns();
                 await contract.finishFarming();
 
-                expect(await blockTimestamp()).to.eq(startBlockTimestamp + rewardsDuration / 2);
+                expect(await getBlockTimestamp()).to.eq(startBlockTimestamp + rewardsDuration / 2);
 
                 staker1FinalEarnings = await contract.earned(staker1Address);
                 staker2FinalEarnings = await contract.earned(staker2Address);

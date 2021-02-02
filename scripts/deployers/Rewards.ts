@@ -1,9 +1,21 @@
 import hre from 'hardhat';
 import {Contract} from '@ethersproject/contracts';
 
-import {constructorAbi} from '../helpers';
+import {constructorAbi, getArtifacts, getProvider} from '../helpers';
+import CONFIG from '../../config/config';
 
-const { ethers } = hre;
+const {ethers} = hre;
+const [Rewards] = getArtifacts('Rewards');
+
+export const getRewardsContract = async (): Promise<Contract> => {
+  if (!CONFIG.stage1.Rewards.address) {
+    throw Error('UMB address is empty');
+  }
+
+  const deployer = (await ethers.getSigners())[<number>hre.config.namedAccounts.deployer];
+  return new ethers.Contract(CONFIG.stage1.Rewards.address, Rewards.abi, getProvider()).connect(deployer);
+};
+
 
 export const deployRewards = async (owner: string): Promise<Contract> => {
   const contractName = 'Rewards';

@@ -1,11 +1,11 @@
-import CONFIG from '../../config/config';
 import hre from 'hardhat';
-import UmbMultiSig from '../../artifacts/contracts/UmbMultiSig.sol/UmbMultiSig.json';
-import {getProvider, validationMark} from '../helpers';
 import {Contract} from '@ethersproject/contracts';
 
-const { ethers } = hre;
-const { BigNumber } = ethers;
+import CONFIG from '../../config/config';
+import {getArtifacts, getProvider} from '../helpers';
+
+const {ethers} = hre;
+const [UmbMultiSig] = getArtifacts('UmbMultiSig')
 
 export const multiSigContract = async (): Promise<Contract> => {
   if (!CONFIG.multiSig.address) {
@@ -15,32 +15,17 @@ export const multiSigContract = async (): Promise<Contract> => {
   return new ethers.Contract(CONFIG.multiSig.address, UmbMultiSig.abi, getProvider());
 };
 
-export const deployUmbMultiSig = async (libStrings: string): Promise<Contract> => {
+export const deployUmbMultiSig = async (): Promise<Contract> => {
   const {owners, requiredPower} = CONFIG.multiSig;
 
   const addresses = owners.map(data => data.address);
   const powers = owners.map(data => data.power);
 
-  const Contract = await ethers.getContractFactory('UmbMultiSig', {
-    libraries: {
-      Strings: libStrings
-    }
-  });
-
+  const Contract = await ethers.getContractFactory('UmbMultiSig');
   const contract = await Contract.deploy(addresses, powers, requiredPower);
   await contract.deployed();
+
   console.log('deployed UmbMultiSig:', contract.address);
-
-  owners.forEach((data) => {
-    contract.ownersPowers(data.address).then((power: typeof BigNumber) => {
-      const check = power.toString() === data.power.toString(10);
-
-      console.log('check for power', data.address, power.toString(), '==', data.power, validationMark(check));
-      if (!check) {
-        throw Error('Oops...');
-      }
-    });
-  });
 
   return contract;
 };

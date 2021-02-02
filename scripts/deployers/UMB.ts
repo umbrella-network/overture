@@ -1,18 +1,19 @@
-import CONFIG from '../../config/config';
 import hre from 'hardhat';
 import {Contract} from '@ethersproject/contracts';
-import Umb from '../../artifacts/contracts/UMB.sol/UMB.json';
-import {constructorAbi, getProvider} from '../helpers';
 
-const { ethers, getNamedAccounts } = hre;
+import CONFIG from '../../config/config';
+import {constructorAbi, getArtifacts, getProvider} from '../helpers';
 
-export const UmbContract = async (address: string | undefined = CONFIG.UMB.address): Promise<Contract> => {
-  if (!address) {
+const { ethers } = hre;
+const [Umb] = getArtifacts('UMB')
+
+export const getUmbContract = async (): Promise<Contract> => {
+  if (!CONFIG.UMB.address) {
     throw Error('UMB address is empty');
   }
 
-  const {deployer} = await getNamedAccounts();
-  return new ethers.Contract(address, Umb.abi, getProvider()).connect(deployer);
+  const deployer = (await ethers.getSigners())[<number>hre.config.namedAccounts.deployer];
+  return new ethers.Contract(CONFIG.UMB.address, Umb.abi, getProvider()).connect(deployer);
 };
 
 export const deployUMB = async (owner: string): Promise<Contract> => {

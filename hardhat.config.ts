@@ -1,4 +1,5 @@
-import 'dotenv/config';
+require('custom-env').env();
+
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-web3';
@@ -11,7 +12,10 @@ import 'hardhat-gas-reporter';
 
 import {HardhatUserConfig} from 'hardhat/types';
 
+
 const { INFURA_ID, DEPLOYER_PK } = process.env;
+
+console.log(INFURA_ID, DEPLOYER_PK)
 
 const balance = '1000' + '0'.repeat(18);
 
@@ -25,7 +29,7 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
-      blockGasLimit: 80000000,
+      blockGasLimit: 800000000,
       accounts: [
         // 0xc783df8a850f42e7f7e57013759c285caa701eb6
         {balance, privateKey: '0xc5e8f61d1ab959b397eecc0a37a6517b8e67a0e7cf1f4bce5591f3ed80199122'},

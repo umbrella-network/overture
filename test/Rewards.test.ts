@@ -7,7 +7,7 @@ import {BigNumber, Signer} from 'ethers';
 import {deployMockContract} from '@ethereum-waffle/mock-contract';
 import {Contract} from '@ethersproject/contracts';
 import IERC20 from '@openzeppelin/contracts/build/contracts/IERC20.json';
-import {blockTimestamp, mintBlock} from './utils';
+import {getBlockTimestamp, mintBlock} from './utils';
 
 chai.use(solidity);
 
@@ -98,14 +98,14 @@ describe('Rewards', async () => {
     it('Reward balance increases over time', async () => {
       await token.mock.balanceOf.withArgs(rewards.address).returns(1000);
 
-      const prevTimestamp = await blockTimestamp();
+      const prevTimestamp = await getBlockTimestamp();
       const startTime = prevTimestamp + 5, duration = 23, amount = 61;
 
       expect(await rewards.startDistribution(token.address, startTime, [participantAddress], [amount], [duration], [0]))
         .to.emit(rewards, 'LogBurnKey');
 
       for (let i = 0; i <= duration + (startTime - prevTimestamp); ++i) {
-        const timestamp = await blockTimestamp();
+        const timestamp = await getBlockTimestamp();
 
         const progress = Math.min(Math.max(0, (timestamp - startTime) / duration), 1);
 
@@ -131,7 +131,7 @@ describe('Rewards', async () => {
 
       it(`bulk increases over time by ${bulk}%`, async () => {
         await token.mock.balanceOf.withArgs(rewards.address).returns(amount);
-        const startTime = await blockTimestamp() + 1;
+        const startTime = await getBlockTimestamp() + 1;
         const bulkAmount = Math.trunc(amount * bulk / 100);
         const bulkBalances: number[] = [];
         let bulkBalance = 0;
@@ -149,7 +149,7 @@ describe('Rewards', async () => {
         while (progress < 1) {
           await mintBlock();
 
-          const timestamp = await blockTimestamp();
+          const timestamp = await getBlockTimestamp();
           progress = Math.min(Math.trunc((timestamp - startTime) / duration * 100) / 100, 1);
           const id = Math.floor(progress * 100 / bulk);
 

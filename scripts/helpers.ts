@@ -125,3 +125,5 @@ export const getArtifacts = (...contractsNames: string[]): any[] => {
     require(`${__dirname}/../artifacts/contracts/${name}.sol/${name}.json`)
   );
 };
+
+export const breakLog = (): void => console.log(`\n${'-'.repeat(30)}\n\n`);

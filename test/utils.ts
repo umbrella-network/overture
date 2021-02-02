@@ -14,7 +14,7 @@ export const numberToWei = (n: number | string, decimals = 18): string => {
 
 export const mintBlock = async (): Promise<void> => ethers.provider.send('evm_mine', []);
 
-export const blockTimestamp = async (): Promise<number> => {
+export const getBlockTimestamp = async (): Promise<number> => {
   const block = await ethers.provider.getBlock('latest');
   return block.timestamp;
 };

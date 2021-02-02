@@ -22,7 +22,7 @@
     "bn.js": "^5.1.3",
     "chai": "^4.2.0",
     "coveralls": "^3.1.0",
-    "dotenv": "^8.2.0",
+    "custom-env": "^2.0.1",
     "eslint": "^7.18.0",
     "eslint-config-standard": "^16.0.2",
     "eslint-plugin-import": "^2.22.1",
@@ -52,15 +52,26 @@
     "coveralls": "hardhat coverage && cat coverage/lcov.info | coveralls",
     "lint": "eslint . --ext .js,.jsx,.ts",
     "lint:fix": "npm run lint -- --fix",
-    "deploy": "NODE_ENV=development npx hardhat run --network localhost ./scripts/deploy-all.ts",
-    "deploy:stage0": "NODE_ENV=development npx hardhat run --network localhost ./scripts/deploy-stage0-auction.ts",
-    "deploy:stage0:staging": "NODE_ENV=staging npx hardhat run --network kovan ./scripts/deploy-stage0-auction.ts",
-    "deploy:stage1": "NODE_ENV=development npx hardhat run --network localhost ./scripts/deploy-stage1-farming.ts",
-    "deploy:stage1:staging": "NODE_ENV=staging npx hardhat run --network kovan ./scripts/deploy-stage1-farming.ts",
+
+    "deploy:contracts": "NODE_ENV=development npx hardhat run --network localhost ./scripts/001-deploy-contracts.ts",
+    "deploy:contracts:staging": "NODE_ENV=staging npx hardhat run --network kovan ./scripts/001-deploy-contracts.ts",
+
+    "mint:auction": "NODE_ENV=development npx hardhat run --network localhost ./scripts/002-tokens-for-auction.ts",
+    "mint:auction:staging": "NODE_ENV=staging npx hardhat run --network kovan ./scripts/002-tokens-for-auction.ts",
+
+    "mint:rewards": "NODE_ENV=development npx hardhat run --network localhost ./scripts/003-mint-rewards.ts",
+    "mint:rewards:staging": "NODE_ENV=staging npx hardhat run --network kovan ./scripts/003-mint-rewards.ts",
+
+    "mint:farming": "NODE_ENV=development npx hardhat run --network localhost ./scripts/004-start-farming.ts",
+    "mint:farming:staging": "NODE_ENV=staging npx hardhat run --network kovan ./scripts/004-start-farming.ts",
+
+    "setup:multisig": "NODE_ENV=development npx hardhat run --network localhost ./scripts/make-multisig-owner.ts",
+    "setup:multisig:staging": "NODE_ENV=staging npx hardhat run --network kovan ./scripts/make-multisig-owner.ts",
+
     "compile": "npx hardhat compile",
     "node": "npx hardhat node",
     "lint:sol": "solhint \"contracts/**/*.sol\"",
-    "flatten": "rm flattened_* && npm run flatten:auction && npm run flatten:multi-sig && npm run flatten:umb && npm run flatten:rumb && npm run flatten:staking",
+    "flatten": "rm -f flattened_* && npm run flatten:auction && npm run flatten:multi-sig && npm run flatten:umb && npm run flatten:rumb && npm run flatten:staking",
     "flatten:auction": "npx truffle-flattener ./contracts/Auction.sol | awk '/SPDX-License-Identifier/&&c++>0 {next} 1' > flattened_Auction.sol",
     "flatten:multi-sig": "npx truffle-flattener ./contracts/UmbMultiSig.sol | awk '/SPDX-License-Identifier/&&c++>0 {next} 1' > flattened_UmbMultiSig.sol",
     "flatten:umb": "npx truffle-flattener ./contracts/UMB.sol | awk '/SPDX-License-Identifier/&&c++>0 {next} 1' > flattened_UMB.sol",

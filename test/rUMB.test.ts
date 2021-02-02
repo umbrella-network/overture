@@ -7,6 +7,7 @@ import web3 from 'web3';
 import {deployMockContract} from '@ethereum-waffle/mock-contract';
 
 import {oneYear} from '../scripts/helpers';
+import {getBlockTimestamp} from "./utils";
 
 chai.use(solidity);
 
@@ -224,7 +225,7 @@ describe('rUMB', async () => {
 
   describe('.startEarlySwap()', () => {
     it('Owner can start early swap', async () => {
-      const {timestamp} = await ethers.provider.getBlock('latest');
+      const timestamp = await getBlockTimestamp();
 
       await expect(rUMB.startEarlySwap()).to.emit(rUMB, 'LogStartEarlySwapNow').withArgs(timestamp + 1);
     });
