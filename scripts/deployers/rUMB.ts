@@ -1,10 +1,12 @@
 import CONFIG from '../../config/config';
 import hre from 'hardhat';
+import {Contract} from '@ethersproject/contracts';
+
 import {constructorAbi} from '../helpers';
 
 const { ethers } = hre;
 
-export const deployRUMB1 = async (owner: string, libStrings: string) => {
+export const deployRUMB1 = async (owner: string, libStrings: string): Promise<Contract> => {
   const contractName = 'rUMB';
   const Contract = await ethers.getContractFactory(contractName, {
     libraries: {

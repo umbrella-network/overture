@@ -1,10 +1,15 @@
 import CONFIG from '../../config/config';
 import hre from 'hardhat';
+import {Contract} from '@ethersproject/contracts';
+
 import {constructorAbi} from '../helpers';
 
 const { ethers } = hre;
 
-export const deployStakingRewards = async (owner: string, rUmb: string | undefined = CONFIG.stage1.rUmb.address) => {
+export const deployStakingRewards = async (
+  owner: string,
+  rUmb: string | undefined = CONFIG.stage1.rUmb.address
+): Promise<Contract> => {
   const contractName = 'StakingRewards';
 
   const Contract = await ethers.getContractFactory(contractName);
