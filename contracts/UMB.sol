@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./interfaces/SwappableToken.sol";
 import "./interfaces/MintableToken.sol";
 import "./interfaces/ISwapReceiver.sol";
+import "./interfaces/Airdrop.sol";
 
 
 /// @title   Umbrella Rewards contract
@@ -20,7 +21,7 @@ import "./interfaces/ISwapReceiver.sol";
 ///          This token can be mint by owner eg we need UMB for auction. After that we can burn the key
 ///          so nobody can mint anymore.
 ///          It has limit for max total supply, so we need to make sure, total amount of rUMBs fit this limit.
-contract UMB is MintableToken, ISwapReceiver {
+contract UMB is MintableToken, Airdrop, ISwapReceiver {
     using SafeMath for uint256;
 
     // ========== STATE VARIABLES ========== //

@@ -129,7 +129,8 @@ export const getArtifacts = (...contractsNames: string[]): any[] => {
   );
 };
 
-export const loadCSVRewardsDistribution = async (filePath: string): Promise<[string, number][]> => {
+export const loadCSVRewardsDistribution = async (filePath: string, allowDuplicates = true):
+  Promise<[string, number][]> => {
   return new Promise<[string, number][]>((resolve, reject) => {
     fs.readFile(filePath, (err, buffer) => {
       if (err) {
@@ -156,6 +157,9 @@ export const loadCSVRewardsDistribution = async (filePath: string): Promise<[str
         const result: [string, number][] = [];
 
         let total = 0;
+
+        const uniqueAddresses: any = {};
+        const duplicates = [];
 
         for (let i = 1; i < lines.length; ++ i) {
           const values = lines[i];
@@ -188,9 +192,17 @@ export const loadCSVRewardsDistribution = async (filePath: string): Promise<[str
             throw Error(`line ${i}: invalid address checksum ${address}`);
           }
 
-          result.push([address, uamount]);
+          if (uniqueAddresses[address]) {
+            duplicates.push(address);
+          }
 
+          uniqueAddresses[address] = 1;
+          result.push([address, uamount]);
           total += uamount;
+        }
+
+        if (!allowDuplicates && duplicates.length) {
+          throw Error(`Duplicates found ${duplicates}`);
         }
 
         return result;
