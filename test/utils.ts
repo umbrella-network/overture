@@ -1,5 +1,8 @@
-import {ethers} from 'hardhat';
+import hre, {ethers} from 'hardhat';
 import {BigNumber} from 'ethers';
+import { Unit } from 'web3/utils';
+
+const {toWei} = hre.web3.utils;
 
 export const numberToWei = (n: number | string, decimals = 18): string => {
   const parts = n.toString(10).split('.');
@@ -14,9 +17,13 @@ export const numberToWei = (n: number | string, decimals = 18): string => {
 
 export const mintBlock = async (): Promise<void> => ethers.provider.send('evm_mine', []);
 
-export const blockTimestamp = async (): Promise<number> => {
+export const getBlockTimestamp = async (): Promise<number> => {
   const block = await ethers.provider.getBlock('latest');
   return block.timestamp;
 };
 
 export const ethBalanceOf = async (wallet: string): Promise<BigNumber> => ethers.provider.getBalance(wallet)
+
+export const humanNumberToWei = (humanNumber: string, unit: Unit = 'ether'): string => {
+  return toWei(humanNumber.split(',').join(''), unit);
+}

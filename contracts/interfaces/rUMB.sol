@@ -2,15 +2,15 @@
 pragma solidity 0.7.5;
 
 // Inheritance
-import "./interfaces/SwappableToken.sol";
-import "./interfaces/MintableToken.sol";
+import "./SwappableToken.sol";
+import "./MintableToken.sol";
 
 
 /// @title   Umbrella Rewards contract
 /// @author  umb.network
 /// @notice  This is reward UMB token (rUMB)
 /// @dev     Rewards tokens are used for farming and other rewards distributions.
-contract rUMB is MintableToken, SwappableToken {
+abstract contract rUMB is MintableToken, SwappableToken {
     // ========== STATE VARIABLES ========== //
 
     // ========== CONSTRUCTOR ========== //
@@ -32,14 +32,4 @@ contract rUMB is MintableToken, SwappableToken {
             _mint(_initialHolder, _initialBalance);
         }
     }
-
-    // ========== MODIFIERS ========== //
-
-    // ========== MUTATIVE FUNCTIONS ========== //
-
-    // ========== PRIVATE / INTERNAL ========== //
-
-    // ========== RESTRICTED FUNCTIONS ========== //
-
-    // ========== EVENTS ========== //
 }
