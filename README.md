@@ -36,7 +36,7 @@ Each smart contract has description in it. General overview is as follows:
 
 1. make sure configuration in `/config/live.ts` is valid
 1. deploy all contracts using single/regular wallet and make yourself an owner
-`npm run deploy:contracts:live`.
+`yarn deploy:contracts:live`.
 1. copy addresses of deployed contracts to config file
 1. verify code on etherscan (deployment script provides constructor ABI)
 1. verify initial contract setup like max token allowance
@@ -44,8 +44,8 @@ Each smart contract has description in it. General overview is as follows:
 ### 2. Setup
 
 1. make sure configuration in `/config/live.ts` is valid
-1. run `npm run setup:farming:live` to mint rUMB1 for farming contract - **it will not start farming**
-1. run `npm run setup:multisig:live` to change ownership of all contract to multisig
+1. run `yarn setup:farming:live` to mint rUMB1 for farming contract - **it will not start farming**
+1. run `yarn setup:multisig:live` to change ownership of all contract to multisig
 
 ### 3. Make it happen!
 

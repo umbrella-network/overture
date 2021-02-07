@@ -206,3 +206,5 @@ export const loadCSVRewardsDistribution = async (filePath: string, allowDuplicat
       });
   });
 };
+
+export const breakLog = (): void => console.log(`\n${'-'.repeat(30)}\n\n`);
