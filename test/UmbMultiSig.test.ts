@@ -9,8 +9,8 @@ import {Contract} from '@ethersproject/contracts';
 import { getArtifacts, getProvider, timestamp} from '../scripts/helpers';
 import {ethBalanceOf} from './utils';
 
-const [UmbMultiSig, UMB, rUMB, Rewards, StakingRewards] =
-  getArtifacts('UmbMultiSig', 'UMB', 'rUMB', 'Rewards', 'StakingRewards');
+const [UmbMultiSig, UMB, rUMB, StakingRewards] =
+  getArtifacts('UmbMultiSig', 'UMB', 'rUMB', 'StakingRewards');
 
 describe('UmbMultiSig', () => {
   const requiredPower = 4;
@@ -32,7 +32,6 @@ describe('UmbMultiSig', () => {
 
   let umb: Contract;
   let rUmb: Contract;
-  let rewards: Contract;
   let stakingRewards: Contract;
   let contract: Contract;
 
@@ -41,7 +40,6 @@ describe('UmbMultiSig', () => {
     const provider = getProvider();
     const umb = await deployMockContract(deployer, UMB.abi);
     const rUmb = await deployMockContract(deployer, rUMB.abi);
-    const rewards = await deployMockContract(deployer, Rewards.abi);
     const stakingRewards = await deployMockContract(deployer, StakingRewards.abi);
 
     const contractFactory = new ContractFactory(UmbMultiSig.abi, UmbMultiSig.bytecode, deployer);
@@ -61,7 +59,6 @@ describe('UmbMultiSig', () => {
       anyWallet,
       umb,
       rUmb,
-      rewards,
       stakingRewards,
       contract,
       provider,
@@ -78,7 +75,6 @@ describe('UmbMultiSig', () => {
       anyWallet,
       umb,
       rUmb,
-      rewards,
       stakingRewards,
       contract,
     } = await setup());
@@ -500,15 +496,6 @@ describe('UmbMultiSig', () => {
       await rUmb.mock.startEarlySwap.withArgs().returns();
 
       await expect(contract.connect(superOwner).submitRUMBStartEarlySwapTx(rUmb.address))
-        .to.emit(contract, 'LogExecution').withArgs(1, '0x')
-    });
-
-    it('executes Rewards.startDistribution()', async () => {
-      const params = [umb.address, timestamp(), [anyWalletAddress], [1], [2], [0]];
-
-      await rewards.mock.startDistribution.withArgs(...params).returns();
-
-      await expect(contract.connect(superOwner).submitRewardsStartDistributionTx(rewards.address, ...params))
         .to.emit(contract, 'LogExecution').withArgs(1, '0x')
     });
 
