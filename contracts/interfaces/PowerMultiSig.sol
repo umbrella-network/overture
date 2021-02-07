@@ -4,8 +4,6 @@ pragma solidity 0.7.5;
 // Inheritance
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-// TODO remove power user
-
 /// @title   Multi Signature base on Power
 /// @author  umb.network
 /// @notice  It's based on https://github.com/gnosis/MultiSigWallet but modified in a way to support power of vote.
@@ -92,6 +90,7 @@ abstract contract PowerMultiSig {
             require(ownersPowers[_owners[i]] == 0, "owner already exists");
             require(_owners[i] != address(0), "owner is empty");
             require(_powers[i] != 0, "power is empty");
+            require(_powers[i] < _requiredPower, "super-user not allowed");
 
             ownersPowers[_owners[i]] = _powers[i];
             sumOfPowers = sumOfPowers.add(_powers[i]);
@@ -112,6 +111,7 @@ abstract contract PowerMultiSig {
     validRequirement(owners.length + 1, totalCurrentPower + _power, requiredPower)
     {
         require(_power != 0, "_power is empty");
+        require(_power < requiredPower, "super-user not allowed");
 
         ownersPowers[_owner] = _power;
         owners.push(_owner);
@@ -123,6 +123,7 @@ abstract contract PowerMultiSig {
     function removeOwner(address _owner) public onlyWallet whenOwnerExists(_owner)
     {
         uint256 ownerPower = ownersPowers[_owner];
+
         require(
             totalCurrentPower - ownerPower >= requiredPower,
             "can't remove owner, because there will be not enough power left"
