@@ -28,7 +28,6 @@ contract Rewards is Owned {
     uint256 public distributionStartTime;
 
     mapping(address => Reward) public rewards;
-    address[] public participants;
 
     struct Reward {
         uint256 total;
@@ -44,10 +43,6 @@ contract Rewards is Owned {
     }
 
     // ========== VIEWS ========== //
-
-    function participantsCount() public view returns (uint256) {
-        return participants.length;
-    }
 
     function balanceOf(address _address) public view returns (uint256) {
         uint256 startTime = distributionStartTime;
@@ -137,7 +132,6 @@ contract Rewards is Owned {
         require(rewardToken.balanceOf(address(this)) >= sum, "not enough tokens for rewards");
 
         rewardToken = _rewardToken;
-        participants = _participants;
         setupDone = true;
 
         emit LogSetup(sum, address(_rewardToken));
