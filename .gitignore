@@ -10,3 +10,5 @@ flattened_*
 
 coverage/
 coverage.json
+
+config/development.ts

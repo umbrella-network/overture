@@ -1,4 +1,5 @@
-import 'dotenv/config';
+require('custom-env').env(); // eslint-disable-line
+
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-web3';
@@ -52,12 +53,22 @@ const config: HardhatUserConfig = {
         {balance: '1000000', privateKey: '0x87630b2d1de0fbd5044eb6891b3d9d98c34c8d310c852f98550ba774480e47cc'}
       ] // */
     },
-    kovan: {
+    development: {
       url: `https://kovan.infura.io/v3/${INFURA_ID}`,
-      accounts: DEPLOYER_PK ? [
-        DEPLOYER_PK, // deployer, must be super owner for scripts to work
-      ] : [],
+      accounts: DEPLOYER_PK ? [DEPLOYER_PK] : [],
       chainId: 42,
+      gasPrice: 1000000000
+    },
+    staging: {
+      url: `https://ropsten.infura.io/v3/${INFURA_ID}`,
+      accounts: DEPLOYER_PK ? [DEPLOYER_PK] : [],
+      chainId: 3,
+      gasPrice: 10000000000
+    },
+    live: {
+      url: `https://mainnet.infura.io/v3/${INFURA_ID}`,
+      accounts: DEPLOYER_PK ? [DEPLOYER_PK] : [],
+      chainId: 1,
       gasPrice: 1000000000
     },
   },
