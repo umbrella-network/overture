@@ -26,7 +26,6 @@ contract Rewards is Owned {
     ERC20 public rewardToken;
 
     uint256 public distributionStartTime;
-    uint256 public totalLinearRewards;
 
     mapping(address => Reward) public rewards;
     address[] public participants;
@@ -86,24 +85,20 @@ contract Rewards is Owned {
 
     function start() external onlyOwner {
         require(setupDone, "contract not setup");
-        require(rewardToken.balanceOf(address(this)) >= totalLinearRewards, "not enough tokens for rewards");
 
         distributionStartTime = block.timestamp;
     }
 
     function cancel(address _participant) external onlyOwner {
-        uint256 startTime = distributionStartTime;
         Reward memory reward = rewards[_participant];
-
+        uint256 startTime = distributionStartTime;
         uint256 rewardsSoFar = _totalBalanceOf(reward, startTime);
         uint256 remain = reward.total.sub(rewardsSoFar);
 
         UMB(address(rewardToken)).burn(remain);
+
         rewards[_participant].total = rewardsSoFar;
         rewards[_participant].duration = block.timestamp - startTime;
-        totalLinearRewards -= remain;
-
-        require(rewardToken.balanceOf(address(this)) >= totalLinearRewards, "not enough tokens for rewards");
 
         emit LogCancelDistribution(_participant);
     }
@@ -131,7 +126,6 @@ contract Rewards is Owned {
         require(_participants.length == _durations.length, "_participants count must match _durations count");
         require(address(_rewardToken) != address(0x0), "empty _rewardToken");
 
-        setupDone = true;
         uint256 sum = 0;
 
         for (uint256 i = 0; i < _participants.length; i++) {
@@ -140,16 +134,19 @@ contract Rewards is Owned {
             sum = sum.add(_totalRewards[i]);
         }
 
+        require(rewardToken.balanceOf(address(this)) >= sum, "not enough tokens for rewards");
+
         rewardToken = _rewardToken;
         participants = _participants;
-        totalLinearRewards = sum;
+        setupDone = true;
 
-        emit LogSetup(sum);
+        emit LogSetup(sum, address(_rewardToken));
     }
 
     // ========== EVENTS ========== //
 
-    event LogSetup(uint256 amount);
+    event LogSetup(uint256 amount, address indexed rewardToken);
+    event LogStart(uint256 startTime);
     event LogChangeAddress(address indexed from, address indexed to);
     event LogCancelDistribution(address indexed participant);
     event LogClaimed(address indexed recipient, uint256 amount);
