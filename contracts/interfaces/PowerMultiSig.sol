@@ -4,6 +4,8 @@ pragma solidity 0.7.5;
 // Inheritance
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
+// TODO remove power user
+
 /// @title   Multi Signature base on Power
 /// @author  umb.network
 /// @notice  It's based on https://github.com/gnosis/MultiSigWallet but modified in a way to support power of vote.
@@ -179,6 +181,12 @@ abstract contract PowerMultiSig {
         confirmTransaction(transactionId);
     }
 
+    function confirmTransactions(uint256[] calldata _transactionsIds) external {
+        for (uint i=0; i < _transactionsIds.length; i++) {
+            confirmTransaction(_transactionsIds[i]);
+        }
+    }
+
     function confirmTransaction(uint256 _transactionId)
     public
     whenOwnerExists(msg.sender)
@@ -200,6 +208,12 @@ abstract contract PowerMultiSig {
     {
         confirmations[_transactionId][msg.sender] = false;
         emit LogRevocation(msg.sender, _transactionId);
+    }
+
+    function executeTransactions(uint256[] calldata _transactionsIds) external {
+        for (uint i=0; i < _transactionsIds.length; i++) {
+            executeTransaction(_transactionsIds[i]);
+        }
     }
 
     /// @dev Allows anyone to execute a confirmed transaction.

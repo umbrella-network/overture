@@ -6,11 +6,11 @@ import {BigNumber, ContractFactory, Signer} from 'ethers';
 import {deployMockContract} from '@ethereum-waffle/mock-contract';
 import {Contract} from '@ethersproject/contracts';
 
-import { getArtifacts, getProvider, timestamp} from '../scripts/helpers';
+import { getArtifacts, getProvider } from '../scripts/helpers';
 import {ethBalanceOf} from './utils';
 
-const [UmbMultiSig, UMB, rUMB, StakingRewards] =
-  getArtifacts('UmbMultiSig', 'UMB', 'rUMB', 'StakingRewards');
+const [UmbMultiSig, UMB, rUMB1, StakingRewards] =
+  getArtifacts('UmbMultiSig', 'UMB', 'rUMB1', 'StakingRewards');
 
 describe('UmbMultiSig', () => {
   const requiredPower = 4;
@@ -39,7 +39,7 @@ describe('UmbMultiSig', () => {
     const [deployer, owner1, owner2, owner3, superOwner, anyWallet] = await ethers.getSigners();
     const provider = getProvider();
     const umb = await deployMockContract(deployer, UMB.abi);
-    const rUmb = await deployMockContract(deployer, rUMB.abi);
+    const rUmb = await deployMockContract(deployer, rUMB1.abi);
     const stakingRewards = await deployMockContract(deployer, StakingRewards.abi);
 
     const contractFactory = new ContractFactory(UmbMultiSig.abi, UmbMultiSig.bytecode, deployer);
@@ -61,7 +61,7 @@ describe('UmbMultiSig', () => {
       rUmb,
       stakingRewards,
       contract,
-      provider,
+      provider
     };
   };
 
@@ -76,7 +76,7 @@ describe('UmbMultiSig', () => {
       umb,
       rUmb,
       stakingRewards,
-      contract,
+      contract
     } = await setup());
     deployerAddress = await deployer.getAddress();
     superOwnerAddress = await superOwner.getAddress();
@@ -490,14 +490,14 @@ describe('UmbMultiSig', () => {
 
       await expect(contract.connect(superOwner).submitUMBSetRewardTokensTx(umb.address, ...params))
         .to.emit(contract, 'LogExecution').withArgs(1, '0x')
-    });
+    })
 
     it('executes rUMB.startEarlySwap()', async () => {
       await rUmb.mock.startEarlySwap.withArgs().returns();
 
       await expect(contract.connect(superOwner).submitRUMBStartEarlySwapTx(rUmb.address))
         .to.emit(contract, 'LogExecution').withArgs(1, '0x')
-    });
+    })
 
     it('executes StakingRewards.setRewardsDistribution()', async () => {
       await stakingRewards.mock.setRewardsDistribution.withArgs(anyWalletAddress).returns();
@@ -505,7 +505,7 @@ describe('UmbMultiSig', () => {
       await expect(contract.connect(superOwner)
         .submitStakingRewardsSetRewardsDistributionTx(stakingRewards.address, anyWalletAddress))
         .to.emit(contract, 'LogExecution').withArgs(1, '0x')
-    });
+    })
 
     it('executes StakingRewards.setRewardsDuration()', async () => {
       await stakingRewards.mock.setRewardsDuration.withArgs(1234).returns();
@@ -513,7 +513,7 @@ describe('UmbMultiSig', () => {
       await expect(contract.connect(superOwner)
         .submitStakingRewardsSetRewardsDurationTx(stakingRewards.address, 1234))
         .to.emit(contract, 'LogExecution').withArgs(1, '0x')
-    });
+    })
 
     it('executes StakingRewards.finishFarming()', async () => {
       await stakingRewards.mock.finishFarming.returns();
@@ -521,6 +521,6 @@ describe('UmbMultiSig', () => {
       await expect(contract.connect(superOwner)
         .submitStakingRewardsFinishFarmingTx(stakingRewards.address))
         .to.emit(contract, 'LogExecution').withArgs(1, '0x')
-    });
+    })
   });
 });
