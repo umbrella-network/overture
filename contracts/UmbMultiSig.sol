@@ -76,19 +76,17 @@ contract UmbMultiSig is PowerMultiSig {
 
     // ========== helpers for: Rewards
 
-    function submitRewardsStartDistributionTx(
+    function submitRewardsSetupDistributionTx(
         address _destination,
         address _rewardToken,
-        uint _startTime,
         address[] calldata _participants,
         uint256[] calldata _rewards,
         uint256[] calldata _durations,
         uint8[] calldata _bulks
     ) public returns (uint) {
         bytes memory data = abi.encodeWithSignature(
-            "startDistribution(address,uint256,address[],uint256[],uint256[],uint8[])",
+            "setupDistribution(address,address[],uint256[],uint256[],uint8[])",
             _rewardToken,
-            _startTime,
             _participants,
             _rewards,
             _durations,
@@ -96,6 +94,10 @@ contract UmbMultiSig is PowerMultiSig {
         );
 
         return submitTransaction(_destination, 0, data);
+    }
+
+    function submitRewardsStartTx(address _destination) public returns (uint) {
+        return submitTransaction(_destination, 0, abi.encodeWithSignature("start()"));
     }
 
     // ========== helpers for: StakingRewards

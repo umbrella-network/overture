@@ -503,14 +503,21 @@ describe('UmbMultiSig', () => {
         .to.emit(contract, 'LogExecution').withArgs(1, '0x')
     })
 
-    it('executes Rewards.startDistribution()', async () => {
-      const params = [umb.address, timestamp(), [anyWalletAddress], [1], [2], [0]];
+    it('executes Rewards.setupDistribution()', async () => {
+      const params = [umb.address, [anyWalletAddress], [1], [2], [0]];
 
-      await rewards.mock.startDistribution.withArgs(...params).returns();
+      await rewards.mock.setupDistribution.withArgs(...params).returns();
 
-      await expect(contract.connect(superOwner).submitRewardsStartDistributionTx(rewards.address, ...params))
+      await expect(contract.connect(superOwner).submitRewardsSetupDistributionTx(rewards.address, ...params))
         .to.emit(contract, 'LogExecution').withArgs(1, '0x')
-    })
+    });
+
+    it('executes Rewards.start()', async () => {
+      await rewards.mock.start.returns();
+
+      await expect(contract.connect(superOwner).submitRewardsStartTx(rewards.address))
+        .to.emit(contract, 'LogExecution').withArgs(1, '0x')
+    });
 
     it('executes StakingRewards.setRewardsDistribution()', async () => {
       await stakingRewards.mock.setRewardsDistribution.withArgs(anyWalletAddress).returns();
