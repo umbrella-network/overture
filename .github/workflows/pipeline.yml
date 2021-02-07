@@ -25,19 +25,19 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - run: npm ci
+    - run: yarn install
     - name: Compile contracts
       run: |
-        npm run compile
+        yarn run compile
     - name: Unit tests
       run: |
-        npm run test
+        yarn run test
     - name: Solidity Lint
       run: |
-        npm run lint:sol
+        yarn run lint:sol
     - name: JS Lint
       run: |
-        npm run lint
+        yarn run lint
     - name: Solidity Test Coverage
       run: |
-        npm run coveralls
+        yarn run coveralls

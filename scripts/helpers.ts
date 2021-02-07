@@ -1,5 +1,8 @@
 import 'dotenv/config';
 import hre from 'hardhat';
+import fs from 'fs';
+import web3 from 'web3';
+import csv from 'csv-parser';
 import {Contract} from '@ethersproject/contracts';
 import {Log, Provider, TransactionReceipt} from '@ethersproject/providers';
 import CONFIG from '../config/config';
@@ -124,4 +127,82 @@ export const getArtifacts = (...contractsNames: string[]): any[] => {
   return contractsNames.map(name =>
     require(`${__dirname}/../artifacts/contracts/${name}.sol/${name}.json`)
   );
+};
+
+export const loadCSVRewardsDistribution = async (filePath: string, allowDuplicates = true):
+  Promise<[string, number][]> => {
+  return new Promise<[string, number][]>((resolve, reject) => {
+    const lines: string[][] = [];
+    fs.createReadStream(filePath)
+      .pipe(csv({
+        headers: true,
+      }))
+      .on('data', (data: any) => lines.push(Object.values(data)))
+      .on('end', async () => {
+        ((async () => {
+          const walletIdx = lines[0].indexOf('Wallet');
+          if (walletIdx === -1) {
+            throw Error('Cannot find Wallet column');
+          }
+
+          const amountIdx = lines[0].indexOf('D0 Amount');
+          if (amountIdx === -1) {
+            throw Error('Cannot find Amount column');
+          }
+
+          const result: [string, number][] = [];
+
+          let total = 0;
+
+          const uniqueAddresses: any = {};
+          const duplicates = [];
+
+          for (let i = 1; i < lines.length; ++ i) {
+            const values = lines[i];
+
+            const amount = values[amountIdx];
+            if (!amount) {
+              throw Error(`line ${i}: amount is not provided`);
+            }
+
+            const uamount = parseInt(amount.split(',').join(''), 10);
+
+            if (!uamount || uamount <= 0 || uamount > 100000000) {
+              throw Error(`line ${i}: invalid amount ${amount}`);
+            }
+
+            if (values[0] === 'TOTAL') {
+              if (total !== uamount) {
+                throw Error('The total amount does not match');
+              }
+
+              break;
+            }
+
+            const address = values[walletIdx];
+            if (!address) {
+              throw Error(`line ${i}: address is not provided`);
+            }
+
+            if (!web3.utils.checkAddressChecksum(address)) {
+              throw Error(`line ${i}: invalid address checksum ${address}`);
+            }
+
+            if (uniqueAddresses[address]) {
+              duplicates.push(address);
+            }
+
+            uniqueAddresses[address] = 1;
+            result.push([address, uamount]);
+            total += uamount;
+          }
+
+          if (!allowDuplicates && duplicates.length) {
+            throw Error(`Duplicates found ${duplicates}`);
+          }
+
+          return result;
+        })()).then(resolve).catch(reject);
+      });
+  });
 };

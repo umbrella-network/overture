@@ -216,6 +216,39 @@ describe('UMB', async () => {
     });
   });
 
+  describe('.airdropTokens()', () => {
+    beforeEach(async () => {
+      ({owner, ownerAddress, holder, holderAddress, UMB} = await setup(500, 500));
+    });
+
+    it('Anyone can airdrop tokens', async () => {
+      const addresses = new Array(500).fill(ownerAddress);
+      const balances = new Array(500).fill(1);
+
+      await UMB.connect(holder).airdropTokens(addresses, balances);
+
+      expect(await UMB.balanceOf(ownerAddress)).to.equal(500);
+    });
+
+    it('Cannot exceed the balance', async () => {
+      const addresses = new Array(501).fill(ownerAddress);
+      const balances = new Array(501).fill(1);
+
+      await expect(UMB.airdropTokens(addresses, balances))
+        .to.be.revertedWith('ERC20: transfer amount exceeds balance');
+    });
+
+    it('The number of addresses should be non-zero', async () => {
+      await expect(UMB.airdropTokens([], [100]))
+        .to.be.revertedWith('there are no _addresses');
+    });
+
+    it('The number of amounts should match the number of addresses', async () => {
+      await expect(UMB.airdropTokens([holderAddress], []))
+        .to.be.revertedWith('the number of _addresses should match _amounts');
+    });
+  });
+
   it('Cannot send ETH to the contract', async () => {
     await expect(owner.sendTransaction({
       from: ownerAddress,
