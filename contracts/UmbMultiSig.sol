@@ -74,30 +74,6 @@ contract UmbMultiSig is PowerMultiSig {
         return submitTransaction(_destination, 0, data);
     }
 
-    // ========== helpers for: Rewards
-
-    function submitRewardsStartDistributionTx(
-        address _destination,
-        address _rewardToken,
-        uint _startTime,
-        address[] calldata _participants,
-        uint256[] calldata _rewards,
-        uint256[] calldata _durations,
-        uint8[] calldata _bulks
-    ) public returns (uint) {
-        bytes memory data = abi.encodeWithSignature(
-            "startDistribution(address,uint256,address[],uint256[],uint256[],uint8[])",
-            _rewardToken,
-            _startTime,
-            _participants,
-            _rewards,
-            _durations,
-            _bulks
-        );
-
-        return submitTransaction(_destination, 0, data);
-    }
-
     // ========== helpers for: StakingRewards
 
     function submitStakingRewardsSetRewardsDistributionTx(
