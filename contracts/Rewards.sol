@@ -82,6 +82,8 @@ contract Rewards is Owned {
         require(setupDone, "contract not setup");
 
         distributionStartTime = block.timestamp;
+
+        emit LogStart(block.timestamp);
     }
 
     function cancel(address _participant) external onlyOwner {
@@ -129,9 +131,9 @@ contract Rewards is Owned {
             sum = sum.add(_totalRewards[i]);
         }
 
+        rewardToken = _rewardToken;
         require(rewardToken.balanceOf(address(this)) >= sum, "not enough tokens for rewards");
 
-        rewardToken = _rewardToken;
         setupDone = true;
 
         emit LogSetup(sum, address(_rewardToken));

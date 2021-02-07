@@ -7,21 +7,31 @@ import {BigNumber, Signer} from 'ethers';
 import {deployMockContract} from '@ethereum-waffle/mock-contract';
 import {Contract} from '@ethersproject/contracts';
 import IERC20 from '@openzeppelin/contracts/build/contracts/IERC20.json';
-import {blockTimestamp, mintBlock} from './utils';
+import {getBlockTimestamp, mintBlock} from './utils';
 
 chai.use(solidity);
+
+interface Reward {
+  total: BigNumber;
+  paid: BigNumber;
+  duration: BigNumber;
+}
+
+const newReward = (total: number, duration: number, paid: number): Reward => ({
+  total: BigNumber.from(total), duration: BigNumber.from(duration), paid: BigNumber.from(paid)
+});
+
+const cloneReward = ({total, duration, paid}: Reward): Reward => {
+  return {total, duration, paid};
+};
 
 describe('Rewards', async () => {
   let rewards: Contract, token: Contract;
   let owner: Signer, ownerAddress: string;
-  let participant: Signer, participantAddress: string;
-
-  beforeEach(async () => {
-    ({owner, participant, rewards, token, ownerAddress, participantAddress} = await setup());
-  });
+  let linearParticipant: Signer, linearParticipantAddress: string;
 
   const setup = async () => {
-    const [owner, participant] = await ethers.getSigners();
+    const [owner, linearParticipant] = await ethers.getSigners();
 
     const contract = await ethers.getContractFactory('Rewards');
     const rewards = await contract.deploy(owner.address);
@@ -29,20 +39,33 @@ describe('Rewards', async () => {
 
     const token = await deployMockContract(owner, IERC20.abi);
 
-    return {owner, ownerAddress: owner.address, participant, participantAddress: participant.address, rewards, token};
+    return {
+      owner,
+      ownerAddress: owner.address,
+      linearParticipant,
+      linearParticipantAddress: linearParticipant.address,
+      rewards,
+      token
+    };
   };
+
+  beforeEach(async () => {
+    ({
+      owner,
+      linearParticipant,
+      rewards,
+      token,
+      ownerAddress,
+      linearParticipantAddress,
+    } = await setup());
+  });
 
   it('Should create a contract with an assigned owner', async () => {
     // check the owner
     expect(await rewards.owner()).to.equal(ownerAddress, 'Rewards contract belongs to the owner');
 
     // check initial values
-    expect(await rewards.participantsCount()).to.equal(0, 'A new contract should have no participants');
     expect(await rewards.balanceOf(ownerAddress)).to.equal(0, 'The owner should have 0 balance');
-
-    expect(cloneReward(await rewards.rewards(ethers.constants.AddressZero)))
-      .to.eql(newReward(0, 0, 0), 'A new contract should have no rewards');
-
     expect(await rewards.distributionStartTime()).to.equal(0, 'distributionStartTime should be 0 initially');
 
     expect(await rewards.rewardToken())
@@ -51,185 +74,202 @@ describe('Rewards', async () => {
 
   it('Can transfer ownership to another address', async () => {
     expect(await rewards.owner()).to.equal(ownerAddress, 'Rewards contract belongs to the owner');
-    await rewards.transferOwnership(participantAddress);
-    expect(await rewards.owner()).to.equal(participantAddress, 'Rewards contract should belong to another address');
+    await rewards.transferOwnership(linearParticipantAddress);
+
+    expect(await rewards.owner())
+      .to.equal(linearParticipantAddress, 'Rewards contract should belong to another address');
   });
 
-  describe('.startDistribution()', async () => {
+  describe('.setupDistribution()', () => {
     it('Participant array should be non-empty', async () => {
-      await expect(rewards.startDistribution(ethers.constants.AddressZero, 1, [], [1000], [10], [0]))
+      await expect(rewards.setupDistribution(token.address, [], [1000], [10]))
         .to.revertedWith('revert there is no _participants');
     });
 
     it('Length of participants and rewards should match', async () => {
-      await expect(rewards.startDistribution(ethers.constants.AddressZero, 1, [participantAddress], [], [10], [0]))
+      await expect(rewards.setupDistribution(token.address, [linearParticipantAddress], [], [10]))
         .to.revertedWith('revert _participants count must match _rewards count');
     });
 
     it('Length of participants and durations should match', async () => {
-      await expect(rewards.startDistribution(ethers.constants.AddressZero, 1, [participantAddress], [1000], [], [0]))
-        .to.revertedWith('revert _participants count must match _durations count');
+      await
+        expect(rewards.setupDistribution(token.address, [linearParticipantAddress], [1000], []))
+          .to.revertedWith('revert _participants count must match _durations count');
+    });
+
+    it('participants can NOT be empty addresses', async () => {
+      await
+        expect(rewards.setupDistribution(token.address, [ethers.constants.AddressZero], [1000], [1]))
+          .to.revertedWith('revert empty participant');
+    });
+
+    it('token can NOT be empty', async () => {
+      await
+        expect(rewards.setupDistribution(ethers.constants.AddressZero, [linearParticipantAddress], [1000], [1]))
+          .to.revertedWith('revert empty _rewardToken');
     });
 
     it('Number of allocated tokens cannot not be less than the amount of rewards', async () => {
       await token.mock.balanceOf.withArgs(rewards.address).returns(999);
 
-      await expect(rewards.startDistribution(token.address, 1, [participantAddress], [1000], [10], [0]))
+      expect(rewards.setupDistribution(rewards.address, [linearParticipantAddress], [1000], [1]))
         .to.revertedWith('revert not enough tokens for rewards');
     });
 
-    it('The owner can start distribution', async () => {
-      await token.mock.balanceOf.withArgs(rewards.address).returns(1001);
-
-      expect(await rewards.startDistribution(token.address, 1, [participantAddress], [1000], [10], [0]))
-        .to.emit(rewards, 'LogBurnKey');
-
-      // should lock ownership
-      expect(await rewards.owner()).to.equal(
-        ethers.constants.AddressZero,
-        'The owner resigns from the contract after startDistribution'
-      );
-
-      expect(await rewards.participantsCount()).to.equal(1, 'The number of participants should be 1');
-    });
-  });
-
-  describe('.balanceOf()', async () => {
-    it('Reward balance increases over time', async () => {
+    it('emit LogSetup', async () => {
       await token.mock.balanceOf.withArgs(rewards.address).returns(1000);
 
-      const prevTimestamp = await blockTimestamp();
-      const startTime = prevTimestamp + 5, duration = 23, amount = 61;
-
-      expect(await rewards.startDistribution(token.address, startTime, [participantAddress], [amount], [duration], [0]))
-        .to.emit(rewards, 'LogBurnKey');
-
-      for (let i = 0; i <= duration + (startTime - prevTimestamp); ++i) {
-        const timestamp = await blockTimestamp();
-
-        const progress = Math.min(Math.max(0, (timestamp - startTime) / duration), 1);
-
-        const expectedBalance = Math.floor(progress * amount);
-
-        expect(await rewards.balanceOf(participantAddress))
-          .to.equal(expectedBalance, `The balance is expected to be ${expectedBalance}`);
-
-        // mines and increases time by 1
-        await mintBlock();
-      }
+      await
+        expect(rewards.setupDistribution(token.address, [linearParticipantAddress], [1000], [1]))
+          .to.emit(rewards, 'LogSetup').withArgs(1000, token.address);
     });
-  })
 
-  describe('.bulkProgress()', async () => {
-    [
-      {bulk: 20, amount: 61, duration: 23},
-      {bulk: 1, amount: 100, duration: 23},
-      {bulk: 15, amount: 10000000, duration: 345},
-      {bulk: 30, amount: 91, duration: 23}
-    ].forEach(testCase => {
-      const {bulk, amount, duration} = testCase
+    describe('when setup done', () => {
+      beforeEach(async () => {
+        await token.mock.balanceOf.withArgs(rewards.address).returns(1000);
+        await rewards.setupDistribution(token.address, [linearParticipantAddress], [1000], [2]);
+      });
 
-      it(`bulk increases over time by ${bulk}%`, async () => {
-        await token.mock.balanceOf.withArgs(rewards.address).returns(amount);
-        const startTime = await blockTimestamp() + 1;
-        const bulkAmount = Math.trunc(amount * bulk / 100);
-        const bulkBalances: number[] = [];
-        let bulkBalance = 0;
+      it('expect setupDone = true', async () => {
+        expect(await rewards.setupDone()).to.be.true;
+      });
 
-        await rewards.startDistribution(token.address, startTime, [participantAddress], [amount], [duration], [bulk])
+      it('expect valid rewardToken', async () => {
+        expect(await rewards.rewardToken()).to.eq(token.address);
+      });
 
-        while (bulkBalances.length < 100 / bulk) {
-          bulkBalances.push(bulkBalance)
-          bulkBalance = Math.min(amount, bulkBalances[bulkBalances.length - 1] + bulkAmount)
-        }
-
-        bulkBalances.push(amount)
-        let progress = 0;
-
-        while (progress < 1) {
-          await mintBlock();
-
-          const timestamp = await blockTimestamp();
-          progress = Math.min(Math.trunc((timestamp - startTime) / duration * 100) / 100, 1);
-          const id = Math.floor(progress * 100 / bulk);
-
-          expect(await rewards.balanceOf(participantAddress))
-            .to.equal(
-              progress === 1 ? amount : bulkBalances[id],
-            `invalid bulk balance for ${Math.trunc(progress * 100)}`
-          );
-        }
-
-        await mintBlock();
-        await mintBlock();
-        expect(await rewards.balanceOf(participantAddress)).to.eq(amount, 'expect total amount at the end')
+      it('expect valid participant', async () => {
+        const linearReward = cloneReward(await rewards.rewards(linearParticipantAddress))
+        expect(linearReward).to.eql(newReward(1000, 2, 0));
       });
     });
   });
 
-  describe('.claim()', async () => {
+  describe('.start()', async () => {
+    it('can NOT start if linear setup not done', async () => {
+      await expect(rewards.start()).to.revertedWith('revert contract not setup');
+    });
+
+    it('can NOT start if bulk setup not done', async () => {
+      await expect(rewards.start()).to.revertedWith('revert contract not setup');
+    });
+
+    describe('when setup', async () => {
+      beforeEach(async () => {
+        await token.mock.balanceOf.withArgs(rewards.address).returns(1000);
+        await rewards.setupDistribution(token.address, [linearParticipantAddress], [1000], [1]);
+      });
+
+      it('The owner can start distribution', async () => {
+        await token.mock.balanceOf.withArgs(rewards.address).returns(1000);
+        await rewards.start();
+        const startTime = await getBlockTimestamp();
+
+        expect(await rewards.distributionStartTime()).to.eql(BigNumber.from(startTime));
+      });
+    });
+  });
+
+  describe('.balanceOf()', () => {
+    describe('for linear rewards', () => {
+      it('balance increases over time', async () => {
+        await token.mock.balanceOf.withArgs(rewards.address).returns(1200);
+
+        const duration = 23
+        const amount = 61;
+
+        await rewards.setupDistribution(token.address, [linearParticipantAddress], [amount], [duration]);
+        await rewards.start();
+
+        const startTime = (await rewards.distributionStartTime()).toNumber();
+        let timestamp = await getBlockTimestamp();
+
+        while (timestamp < startTime + duration) {
+          timestamp = await getBlockTimestamp();
+
+          const progress = Math.min(Math.max(0, (timestamp - startTime) / duration), 1);
+
+          const expectedBalance = Math.floor(progress * amount);
+
+          expect(await rewards.balanceOf(linearParticipantAddress))
+            .to.equal(expectedBalance, `The balance is expected to be ${expectedBalance}`);
+
+          // mines and increases time by 1
+          await mintBlock();
+        }
+      });
+    });
+  });
+
+  describe('.claim()', () => {
     it('Throws if there is nothing to claim', async () => {
       await token.mock.balanceOf.withArgs(rewards.address).returns(1001);
-      await token.mock.transfer.withArgs(participantAddress, 1000).returns(true);
+      await token.mock.transfer.withArgs(linearParticipantAddress, 1000).returns(true);
 
-      const {timestamp} = await ethers.provider.getBlock('latest');
+      await rewards.setupDistribution(token.address, [linearParticipantAddress], [1], [2]);
+      await rewards.start();
 
-      await rewards.startDistribution(token.address, timestamp + 2, [participantAddress], [1000], [10], [0]);
+      expect(await rewards.balanceOf(linearParticipantAddress))
+        .to.equal(0, 'There should be no tokens to claim initially');
 
-      expect(await rewards.balanceOf(participantAddress)).to.equal(0, 'There should be no tokens to claim initially');
-
-      await expect(rewards.connect(participant).claim()).to.revertedWith('revert you have no tokens to claim');
+      await expect(rewards.connect(linearParticipant).claim()).to.revertedWith('revert you have no tokens to claim');
     });
 
     it('Transfer all rewards when time elapsed', async () => {
-      await token.mock.balanceOf.withArgs(rewards.address).returns(1001);
-      await token.mock.transfer.withArgs(participantAddress, 1000).returns(true);
+      await token.mock.balanceOf.withArgs(rewards.address).returns(1099);
+      await token.mock.transfer.withArgs(linearParticipantAddress, 1000).returns(true);
 
-      await rewards.startDistribution(token.address, 1, [participantAddress], [1000], [10], [0]);
+      await rewards.setupDistribution(token.address, [linearParticipantAddress], [1000], [1]);
+      await rewards.start();
+      await mintBlock();
 
-      expect(await rewards.balanceOf(participantAddress)).to.equal(1000, 'balanceOf returns all tokens');
-      expect(cloneReward(await rewards.rewards(participantAddress)))
-        .to.eql(newReward(1000, 10, 0), 'rewards returns all tokens');
+      expect(await rewards.balanceOf(linearParticipantAddress))
+        .to.equal(1000, 'balanceOf returns all tokens at the end');
 
-      expect(await rewards.connect(participant).claim())
-        .to.emit(rewards, 'LogClaimed').withArgs(participantAddress, 1000);
+      expect(cloneReward(await rewards.rewards(linearParticipantAddress)))
+        .to.eql(newReward(1000, 1, 0), 'rewards returns all tokens');
 
-      expect(await rewards.balanceOf(participantAddress)).to.equal(0, 'balance is 0 when all tokens are claimed');
-      expect(cloneReward(await rewards.rewards(participantAddress)))
+      expect(await rewards.connect(linearParticipant).claim())
+        .to.emit(rewards, 'LogClaimed').withArgs(linearParticipantAddress, 1000);
+
+      expect(await rewards.balanceOf(linearParticipantAddress)).to.equal(0, 'balance is 0 when all tokens are claimed');
+
+      expect(cloneReward(await rewards.rewards(linearParticipantAddress)))
         .to.eql(
-        newReward(1000, 10, 1000),
+        newReward(1000, 1, 1000),
         'all rewards are claimed; so, tokens paid equal to the total number of tokens'
       );
     });
 
     it('Claim rewards gradually', async () => {
       await token.mock.balanceOf.withArgs(rewards.address).returns(1000);
-      await token.mock.transfer.withArgs(participantAddress, 2).returns(true);
-      await token.mock.transfer.withArgs(participantAddress, 3).returns(true);
+      await token.mock.transfer.withArgs(linearParticipantAddress, 2).returns(true);
+      await token.mock.transfer.withArgs(linearParticipantAddress, 3).returns(true);
 
-      const {timestamp: prevTimestamp} = await ethers.provider.getBlock('latest');
+      const duration = 23, amount = 61;
+      const startTime = (await getBlockTimestamp()) + 2;
 
-      const startTime = prevTimestamp + 5, duration = 23, amount = 61;
+      await rewards.setupDistribution(token.address, [linearParticipantAddress], [amount], [duration])
+      await expect(rewards.start()).to.emit(rewards, 'LogStart').withArgs(startTime);
 
-      expect(await rewards.startDistribution(token.address, startTime, [participantAddress], [amount], [duration], [0]))
-        .to.emit(rewards, 'LogBurnKey');
+      let timestamp = await getBlockTimestamp();
 
       let claimed = 0;
-      for (let i = 0; i <= duration + (startTime - prevTimestamp); ++i) {
-        const {timestamp} = await ethers.provider.getBlock('latest');
+      while (timestamp < startTime + duration) {
+        timestamp = await getBlockTimestamp();
 
         const progress = Math.min(Math.max(0, (timestamp - startTime + 1) / duration), 1);
         const toClaim = Math.floor(progress * amount) - claimed;
 
         if (toClaim > 0) {
-          expect(await rewards.connect(participant).claim())
-            .to.emit(rewards, 'LogClaimed').withArgs(participantAddress, toClaim);
+          expect(await rewards.connect(linearParticipant).claim())
+            .to.emit(rewards, 'LogClaimed').withArgs(linearParticipantAddress, toClaim);
 
           claimed += toClaim;
-          expect(cloneReward(await rewards.rewards(participantAddress)))
+          expect(cloneReward(await rewards.rewards(linearParticipantAddress)))
             .to.eql(newReward(amount, duration, claimed), `${claimed} tokens are claimed`);
         } else {
-          await ethers.provider.send('evm_mine', []);
+          await mintBlock();
         }
       }
 
@@ -238,11 +278,12 @@ describe('Rewards', async () => {
 
     it('Rollback claim() if transfer returns false', async () => {
       await token.mock.balanceOf.withArgs(rewards.address).returns(1001);
-      await token.mock.transfer.withArgs(participantAddress, 1000).returns(false);
+      await token.mock.transfer.withArgs(linearParticipantAddress, 100).returns(false);
 
-      await rewards.startDistribution(token.address, 1, [participantAddress], [1000], [10], [0]);
+      await rewards.setupDistribution(token.address, [linearParticipantAddress], [1000], [10]);
+      await rewards.start();
 
-      await expect(rewards.connect(participant).claim())
+      await expect(rewards.connect(linearParticipant).claim())
         .to.revertedWith('revert SafeERC20: ERC20 operation did not succeed');
     });
   });
@@ -252,17 +293,3 @@ describe('Rewards', async () => {
       .to.revertedWith('Transaction reverted');
   });
 });
-
-interface Reward {
-  total: BigNumber;
-  duration: BigNumber;
-  paid: BigNumber;
-}
-
-const newReward = (total: number, duration: number, paid: number): Reward => {
-  return {total: BigNumber.from(total), duration: BigNumber.from(duration), paid: BigNumber.from(paid)};
-};
-
-const cloneReward = ({total, duration, paid}: Reward): Reward => {
-  return {total, duration, paid};
-};
