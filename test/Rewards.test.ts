@@ -167,6 +167,16 @@ describe('Rewards', async () => {
 
         expect(await rewards.distributionStartTime()).to.eql(BigNumber.from(startTime));
       });
+
+      describe('when started', async () => {
+        beforeEach(async () => {
+          await rewards.start();
+        });
+
+        it('can NOT start again', async () => {
+          await expect(rewards.start()).to.revertedWith('revert already started');
+        });
+      });
     });
   });
 

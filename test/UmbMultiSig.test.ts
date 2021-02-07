@@ -504,7 +504,7 @@ describe('UmbMultiSig', () => {
     })
 
     it('executes Rewards.setupDistribution()', async () => {
-      const params = [umb.address, [anyWalletAddress], [1], [2], [0]];
+      const params = [umb.address, [anyWalletAddress], [1], [2]];
 
       await rewards.mock.setupDistribution.withArgs(...params).returns();
 

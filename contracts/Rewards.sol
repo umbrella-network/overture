@@ -57,11 +57,7 @@ contract Rewards is Owned {
             return reward.total.sub(reward.paid);
         }
 
-        return _totalBalanceOf(reward, startTime).sub(reward.paid);
-    }
-
-    function _totalBalanceOf(Reward memory _reward, uint256 _startTime) internal view returns (uint256) {
-        return _reward.total.mul(block.timestamp.sub(_startTime)).div(_reward.duration);
+        return reward.total.mul(block.timestamp.sub(startTime)).div(reward.duration).sub(reward.paid);
     }
 
     // ========== MUTATIVE FUNCTIONS ========== //
@@ -80,6 +76,7 @@ contract Rewards is Owned {
 
     function start() external onlyOwner {
         require(setupDone, "contract not setup");
+        require(distributionStartTime == 0, "already started");
 
         distributionStartTime = block.timestamp;
 
@@ -89,7 +86,7 @@ contract Rewards is Owned {
     function cancel(address _participant) external onlyOwner {
         Reward memory reward = rewards[_participant];
         uint256 startTime = distributionStartTime;
-        uint256 rewardsSoFar = _totalBalanceOf(reward, startTime);
+        uint256 rewardsSoFar = balanceOf(_participant).sub(reward.paid);
         uint256 remain = reward.total.sub(rewardsSoFar);
 
         UMB(address(rewardToken)).burn(remain);
