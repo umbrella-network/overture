@@ -169,10 +169,6 @@ abstract contract PowerMultiSig {
     onlyWallet
     validRequirement(owners.length, totalCurrentPower, _newPower)
     {
-        for (uint i = 0; i < owners.length; i++) {
-            require(ownersPowers[owners[i]] < _newPower, "we can't have power user, please make _newPower higher");
-        }
-
         requiredPower = _newPower;
         emit LogPowerChange(_newPower);
     }
