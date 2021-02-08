@@ -69,7 +69,8 @@ const config: HardhatUserConfig = {
       url: `https://mainnet.infura.io/v3/${INFURA_ID}`,
       accounts: DEPLOYER_PK ? [DEPLOYER_PK] : [],
       chainId: 1,
-      gasPrice: 1000000000
+      //gasPrice: 1000000000 <= 1 gwei
+      gasPrice:   220000000000
     },
   },
   gasReporter: {
