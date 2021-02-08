@@ -69,6 +69,9 @@
     "setup:farming:staging": "NODE_ENV=staging npx hardhat run --network staging ./scripts/003-setup-farming.ts",
     "setup:multisig": "NODE_ENV=development npx hardhat run --network localhost ./scripts/make-multisig-owner.ts",
     "setup:multisig:staging": "NODE_ENV=staging npx hardhat run --network staging ./scripts/make-multisig-owner.ts",
+
+    "setup:multisig:live": "NODE_ENV=live npx hardhat run --network live ./scripts/make-multisig-owner.ts",
+
     "compile": "npx hardhat compile",
     "node": "npx hardhat node",
     "lint:sol": "solhint \"contracts/**/*.sol\"",
