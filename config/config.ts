@@ -43,7 +43,7 @@ export type ConfigType = {
 const envConfig: Record<string, ConfigType> = {
   development: developmentConfig,
   staging: stagingConfig,
-  launch: liveConfig
+  live: liveConfig
 }
 
 export default envConfig[env];
