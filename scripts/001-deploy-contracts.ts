@@ -57,11 +57,7 @@ async function main() {
   if (!FORCE && CONFIG.stage1.farming.address) {
     console.log('FARMING IS ALREADY DEPLOYED under', CONFIG.stage1.farming.address);
   } else {
-    await deployStakingRewards(
-      deployer,
-      CONFIG.UMB.address || umbAddress,
-      CONFIG.stage1.rUmb1.address || rUmbAddress,
-    );
+    await deployStakingRewards(deployer, umbAddress, rUmbAddress);
   }
 
   console.warn('NEW ADDRESSES ARE SAVED TO CONFIG FILE')
