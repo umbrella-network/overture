@@ -23,10 +23,6 @@ export type ConfigType = {
     initialBalance: string,  // eg. for liquidity provider
     maxAllowedTotalSupply: string
   },
-  auction: {
-    address: string,
-    amountOfTokensForAuction: string
-  },
   stage1: {
     rUmb1: {
       address?: string,

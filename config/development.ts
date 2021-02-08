@@ -24,10 +24,6 @@ export const developmentConfig: ConfigType = {
     initialBalance: '0', // toWei('150000000', 'ether'), for liquidity
     initialHolder: ethers.constants.AddressZero
   },
-  auction: {
-    address: '0xc783df8a850f42e7F7e57013759C285caa701eB6',
-    amountOfTokensForAuction: toWei('50000000', 'ether')
-  },
   stage1: {
     rUmb1: {
       address: '0x0078371BDeDE8aAc7DeBfFf451B74c5EDB385Af7',

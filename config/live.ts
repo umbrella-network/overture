@@ -9,6 +9,7 @@ export const liveConfig: ConfigType = {
     owners: [
       {address: '0x8558fCFE23E53A9555D8aBf5544c9EFc1F108f3e', power: 2},
       {address: '0xA6e4fFa19B213AbeA258ae72e8e1a209B9E543e7', power: 1},
+      {address: '0x52aE9A8B9A962082B92AFa3B25a7D8Ba4392a151', power: 1},
       {address: 'alex', power: 1}
       ],
     requiredPower: 3
@@ -19,10 +20,6 @@ export const liveConfig: ConfigType = {
     symbol: 'UMB',
     initialBalance: humanNumberToWei('5,000,000'),
     initialHolder: '0x3aD81d17D3B5FF75558271E0264085a1E6935872' // AMM ????
-  },
-  auction: {
-    address: ethers.constants.AddressZero,
-    amountOfTokensForAuction: humanNumberToWei('5,000,000')
   },
   stage1: {
     rUmb1: {

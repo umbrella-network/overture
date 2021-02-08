@@ -8,23 +8,19 @@ export const stagingConfig: ConfigType = {
   env: 'staging',
   contractRegistry: {},
   multiSig: {
-    address: '0xa5d96dF87bC54B1B7B395D414d1AA177eF9C7dad',
+    // address: '0xa5d96dF87bC54B1B7B395D414d1AA177eF9C7dad',
     owners: [
       {address: '0x66f13FDceed822E74b6a1e08e082Fa699fF36454', power: 5},
     ],
     requiredPower: 5
   },
   UMB: {
-    address: '0x6F6f5629214f6E3186699FCC4e2B383a7eC0495F',
+    // address: '0x6F6f5629214f6E3186699FCC4e2B383a7eC0495F',
     maxAllowedTotalSupply: hre.web3.utils.toWei('500000000', 'ether'),
     name: 'Umbrella',
     symbol: 'UMB',
     initialBalance: '0',
     initialHolder: ethers.constants.AddressZero
-  },
-  auction: {
-    address: '0xb999782a160903386A95F4bbB2423Ab1d782dc36',
-    amountOfTokensForAuction: toWei('50000000', 'ether')
   },
   stage1: {
     rUmb1: {
