@@ -57,8 +57,14 @@
     "deploy:contracts:force": "NODE_ENV=development FORCE=true npx hardhat run --network localhost ./scripts/001-deploy-contracts.ts",
     "deploy:contracts:dev": "NODE_ENV=development npx hardhat run --network development ./scripts/001-deploy-contracts.ts",
     "deploy:contracts:dev:force": "NODE_ENV=development FORCE=true npx hardhat run --network development ./scripts/001-deploy-contracts.ts",
+
+    "deploy:contracts:live": "NODE_ENV=live npx hardhat run --network live ./scripts/001-deploy-contracts.ts",
+
     "deploy:contracts:staging": "NODE_ENV=staging npx hardhat run --network staging ./scripts/001-deploy-contracts.ts",
     "deploy:contracts:staging:force": "NODE_ENV=staging FORCE=true npx hardhat run --network staging ./scripts/001-deploy-contracts.ts",
+
+    "setup:live": "NODE_ENV=live npx hardhat run --network live ./scripts/003-setup-farming.ts",
+
     "setup:farming": "NODE_ENV=development npx hardhat run --network localhost ./scripts/003-setup-farming.ts",
     "setup:farming:staging": "NODE_ENV=staging npx hardhat run --network staging ./scripts/003-setup-farming.ts",
     "setup:multisig": "NODE_ENV=development npx hardhat run --network localhost ./scripts/make-multisig-owner.ts",
