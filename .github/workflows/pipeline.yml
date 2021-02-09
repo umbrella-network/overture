@@ -39,5 +39,8 @@ jobs:
       run: |
         yarn run lint
     - name: Solidity Test Coverage
-      run: |
-        yarn run coveralls
+      run: yarn run coveralls
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
