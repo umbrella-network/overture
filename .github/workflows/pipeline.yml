@@ -41,3 +41,5 @@ jobs:
     - name: Solidity Test Coverage
       run: |
         yarn run coveralls
+      with:
+        github-token: ${{ secrets.COVERALLS_TOKEN }}
