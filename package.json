@@ -1,6 +1,6 @@
 {
   "name": "overture",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Umbrella DeFi contracts",
   "main": "hardhat.config.ts",
   "directories": {
