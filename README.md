@@ -14,20 +14,6 @@ DeFi farming and token distribution smart contracts that follows
 https://medium.com/umbrella-network/a-proposal-for-the-umb-token-staking-rewards-and-distribution-34e3f3499433
 ).
 
-
-## Smart Contracts
-
-Each smart contract has description in it. General overview is as follows:
-- We deploy MultiSig wallet and we will use it as owner for any contract that is Ownable.
-- Every Ownable contract has option to burn key, which we will use eventually
-- For stage 0 (auction) owner will mint `UMB` that will be sold on auction
-- For stage 1 (farming) we will use :
-  - `StakingRewards` for standard community farming when you stake `UMB` and you farm `rUMB`
-  - `Rewards` will be used for releasing tokens for nodes, contributors etc. 
-    This contract can be used for ditribution of any mileston rewards
-- `UMB` is our main token
-- `rUMB` is reward token and it can be swapped 1:1 for UMB but there are additional conditions to swap be possible.
-
 ## Development
 
 ### Prerequisites
@@ -77,25 +63,6 @@ git hf init
 ```
 
 Check available scripts in `package.json`
-
-### Compiling and migrating smart contracts
-
-There is configuration file `config/config.ts` where you can adjust settings for each environment.
-
-#### Deployment of Stage 0 - Auction
-
-Script will deploy all contracts that are needed fo run the Auction.  
-It will also try to mint tokens for auction - final execution of that depends on MultiSig.
-
-```shell
-npm run deploy:stage0[:env]
-```
-
-#### localhost
-
-```shell
-
-```
 
 ## Licensed under MIT.
 
