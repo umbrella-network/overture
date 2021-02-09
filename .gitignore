@@ -1,0 +1,12 @@
+node_modules
+.idea
+
+#Hardhat files
+cache
+artifacts
+
+flattened_*
+.env*
+
+coverage/
+coverage.json

@@ -1,0 +1,20 @@
+{
+  "extends": "solhint:all",
+  "rules": {
+    "indent": [
+      "error",
+      4
+    ],
+    "compiler-fixed": "off",
+    "comprehensive-interface": "off",
+    "no-simple-event-func-name": "off",
+    "not-rely-on-time": "off",
+    "two-lines-top-level-separator": "off",
+    "mark-callable-contracts": "off",
+    "reason-string": "off",
+    "compiler-version": [
+      "error",
+      "^0.7.5"
+    ]
+  }
+}

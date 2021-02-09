@@ -1,0 +1,43 @@
+# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Contracts Quality Test
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop, main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [14.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - run: yarn install
+    - name: Compile contracts
+      run: |
+        yarn run compile
+    - name: Unit tests
+      run: |
+        yarn run test
+    - name: Solidity Lint
+      run: |
+        yarn run lint:sol
+    - name: JS Lint
+      run: |
+        yarn run lint
+    - name: Solidity Test Coverage
+      run: |
+        yarn run coveralls
