@@ -24,7 +24,7 @@ export const stagingConfig: ConfigType = {
   },
   stage1: {
     rUmb1: {
-      address: '0x19fd817361c403a0B35606f6f0b30a80082FCDB9',
+      // address: '0x19fd817361c403a0B35606f6f0b30a80082FCDB9',
       initialBalance: '0',
       initialHolder: ethers.constants.AddressZero,
       rewardId: 1,
@@ -32,7 +32,7 @@ export const stagingConfig: ConfigType = {
       maxAllowedTotalSupply: toWei('500000000', 'ether'),
     },
     farming: {
-      address: '0xF28287DCe42152836374a09dbD47a2b50403349C',
+      // address: '0xF28287DCe42152836374a09dbD47a2b50403349C',
       // who can notify about reward and start whole farming process:
       rewardsDistribution: '0x66f13FDceed822E74b6a1e08e082Fa699fF36454',
       tokenAmountForDeFiRewards: toWei('45833333', 'ether')
