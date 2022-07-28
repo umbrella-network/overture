@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import hre from 'hardhat';
 import {Provider} from '@ethersproject/providers';
+import {HardhatRuntimeEnvironment} from 'hardhat/types';
 
 const {INFURA_ID} = process.env;
 const {ethers} = hre;
@@ -17,16 +18,9 @@ export const getProvider = (): Provider => {
   }
 };
 
-export const oneMonth = 60 * 60 * 24 * 365 / 12;
-
 export const oneYear = 60 * 60 * 24 * 365;
 
-export const currentTimestamp = Math.round(Date.now() / 1000);
-
-export const timestamp = (): number => Math.round(Date.now() / 1000);
-
-export const getArtifacts = (...contractsNames: string[]): any[] => {
-  return contractsNames.map(name =>
-    require(`${__dirname}/../artifacts/contracts/${name}.sol/${name}.json`)
-  );
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const getArtifacts = (hre: HardhatRuntimeEnvironment, ...contractsNames: string[]): any[] => {
+  return contractsNames.map(name => hre.artifacts.readArtifactSync(name));
 };

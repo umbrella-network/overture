@@ -1,16 +1,17 @@
-import 'hardhat'; // require for IntelliJ to run tests
+import hre from 'hardhat'; // require for IntelliJ to run tests
 import '@nomiclabs/hardhat-waffle'; // require for IntelliJ to run tests
 import {ethers} from 'hardhat';
 import {expect} from 'chai';
-import {BigNumber, ContractFactory, Signer} from 'ethers';
+import {BigNumber, ContractFactory, Signer, Contract} from 'ethers';
 import {deployMockContract} from '@ethereum-waffle/mock-contract';
-import {Contract} from '@ethersproject/contracts';
+import {MockContract} from 'ethereum-waffle';
 
-import { getArtifacts, getProvider } from '../scripts/helpers';
-import {ethBalanceOf} from './utils';
+import {getArtifacts, getProvider} from '../scripts/helpers';
 
-const [UmbMultiSig, UMB, rUMB1, StakingRewards] =
-  getArtifacts('UmbMultiSig', 'UMB', 'rUMB1', 'StakingRewards');
+const [UMB, rUMB1, StakingRewards, Strings] =
+  getArtifacts(hre, 'UMB', 'rUMB1', 'StakingRewards', 'Strings');
+
+const UMB_MULTISIG = 'UmbMultiSig';
 
 describe('UmbMultiSig', () => {
   const requiredPower = 4;
@@ -30,24 +31,40 @@ describe('UmbMultiSig', () => {
   let owner3Address: string;
   let anyWalletAddress: string;
 
-  let umb: Contract;
-  let rUmb: Contract;
-  let stakingRewards: Contract;
+  let umb: MockContract;
+  let rUmb: MockContract;
+  let stakingRewards: MockContract;
   let contract: Contract;
+
+  const txData = (targetContarctName: string, method: string, args: unknown[]): string => {
+    const contractArtifacts = hre.artifacts.readArtifactSync(targetContarctName);
+    const iface = new ethers.utils.Interface(contractArtifacts.abi);
+    return iface.encodeFunctionData(method, args);
+  }
 
   const setup = async () => {
     const [deployer, owner1, owner2, owner3, superOwner, anyWallet] = await ethers.getSigners();
     const provider = getProvider();
     const umb = await deployMockContract(deployer, UMB.abi);
+
     const rUmb = await deployMockContract(deployer, rUMB1.abi);
+
     const stakingRewards = await deployMockContract(deployer, StakingRewards.abi);
 
-    const contractFactory = new ContractFactory(UmbMultiSig.abi, UmbMultiSig.bytecode, deployer);
+    const stringsFactory = new ContractFactory(Strings.abi, Strings.bytecode, deployer);
+    const stringsLibrary = await stringsFactory.deploy();
+
+    const contractFactory = await hre.ethers.getContractFactory('UmbMultiSig', {
+      signer: deployer,
+      libraries: {
+        Strings: stringsLibrary.address,
+      }
+    });
 
     const contract = await contractFactory.deploy(
       [await superOwner.getAddress(), await owner1.getAddress(), await owner2.getAddress()],
       powers,
-      requiredPower
+      requiredPower,
     );
 
     return {
@@ -78,6 +95,7 @@ describe('UmbMultiSig', () => {
       stakingRewards,
       contract
     } = await setup());
+
     deployerAddress = await deployer.getAddress();
     superOwnerAddress = await superOwner.getAddress();
     owner1Address = await owner1.getAddress();
@@ -104,7 +122,10 @@ describe('UmbMultiSig', () => {
     });
 
     it('expect ownersCount to be 3', async () => {
-      expect(await contract.ownersCount()).to.equal(3);
+      expect(await contract.owners(0)).not.eq(ethers.constants.AddressZero);
+      expect(await contract.owners(1)).not.eq(ethers.constants.AddressZero);
+      expect(await contract.owners(2)).not.eq(ethers.constants.AddressZero);
+      await expect(contract.owners(3)).to.be.reverted;
     });
 
     it('expect owners to be valid addresses', async () => {
@@ -129,10 +150,8 @@ describe('UmbMultiSig', () => {
   });
 
   describe('.receive()', () => {
-    it('throw when sending ETH', async () => {
-      await expect(deployer.sendTransaction({to: contract.address})).to.be.reverted;
-      await expect(deployer.sendTransaction({to: contract.address, value: 1})).to.be.reverted;
-      expect(await ethBalanceOf(contract.address)).to.eq(0);
+    it('emits event on sending ETH', async () => {
+      await expect(deployer.sendTransaction({to: contract.address, value: 1})).emit(contract, 'LogDeposit');
     });
   });
 
@@ -140,74 +159,97 @@ describe('UmbMultiSig', () => {
     describe('.onlyWallet', () => {
       it('expect to throw when NOT executed by multisig', async () => {
         await expect(contract.addOwner(anyWalletAddress, 1))
-          .to.be.revertedWith('revert only MultiSigMinter can execute this')
+          .to.be.revertedWith('only MultiSigMinter can execute this')
       });
 
       describe('when acting as multisig', () => {
         it('.whenOwnerDoesNotExist throws when owner already exists', async () => {
-          await expect(contract.connect(superOwner).submitAddOwner(superOwnerAddress, 1))
-            .to.be.revertedWith('owner already exists')
+          const data = txData(UMB_MULTISIG, 'addOwner', [superOwnerAddress, 1]);
+
+          await expect(contract.connect(superOwner).submitTransaction(contract.address, 0, data))
+            .to.be.reverted; // With('owner already exists')
         });
 
         it('.notNull throws when address empty', async () => {
-          await expect(contract.connect(superOwner).submitAddOwner(ethers.constants.AddressZero, 1))
-            .to.be.revertedWith('address is empt')
+          const data = txData(UMB_MULTISIG, 'addOwner', [ethers.constants.AddressZero, 1]);
+
+          await expect(contract.connect(superOwner).submitTransaction(contract.address, 0, data))
+            .to.be.reverted; // With('address is empty')
         });
 
         it('.whenOwnerExists throws when owner NOT exists', async () => {
-          await expect(contract.connect(superOwner).submitRemoveOwner(anyWalletAddress))
-            .to.be.revertedWith('owner do NOT exists')
+          const data = txData(UMB_MULTISIG, 'removeOwner', [anyWalletAddress]);
+
+          await expect(contract.connect(superOwner).submitTransaction(contract.address, 0, data))
+            .to.be.reverted; // With('owner do NOT exists')
         });
 
         it('.whenTransactionExists throws when tx do NOT exists', async () => {
           await expect(contract.connect(superOwner).confirmTransaction(1))
-            .to.be.revertedWith('revert transaction does not exists')
+            .to.be.revertedWith('does not exists')
         });
 
         it('.whenConfirmedBy', async () => {
-          await contract.connect(owner1).submitAddOwner(anyWalletAddress, 1)
+          const data = txData(UMB_MULTISIG, 'addOwner', [anyWalletAddress, 1]);
+          await contract.connect(owner1).submitTransaction(contract.address, 0, data);
 
           await expect(contract.connect(owner2).executeTransaction(0))
-            .to.be.revertedWith('revert transaction NOT confirmed by owner')
+            .to.be.revertedWith('NOT confirmed by owner')
 
           await expect(contract.connect(owner2).confirmTransaction(0)).not.to.be.reverted
         });
 
         it('.notConfirmedBy', async () => {
-          await contract.connect(owner1).submitAddOwner(anyWalletAddress, 1)
+          const data = txData(UMB_MULTISIG, 'addOwner', [anyWalletAddress, 1]);
+          await contract.connect(owner1).submitTransaction(contract.address, 0, data)
 
           await expect(contract.connect(owner2).confirmTransaction(0)).not.to.be.reverted
 
           await expect(contract.connect(owner2).confirmTransaction(0))
-            .to.be.revertedWith('transaction already confirmed by owner')
+            .to.be.revertedWith('already confirmed by owner')
         });
 
         it('.whenNotExecuted', async () => {
-          await contract.connect(superOwner).submitAddOwner(anyWalletAddress, 1)
+          const data = txData(UMB_MULTISIG, 'addOwner', [anyWalletAddress, 1]);
+          await contract.connect(superOwner).submitTransaction(contract.address, 0, data);
 
           await expect(contract.connect(superOwner).executeTransaction(0))
-            .to.be.revertedWith('transaction already executed')
+            .to.be.revertedWith('already executed')
         });
 
         it('.validRequirement tests', async () => {
-          await expect(contract.connect(superOwner).submitChangeRequiredPower(10))
-            .to.be.revertedWith('owners do NOT have enough power');
+          let data = txData(UMB_MULTISIG, 'changeRequiredPower', [10]);
 
-          await expect(contract.connect(superOwner).submitChangeRequiredPower(0))
-            .to.be.revertedWith('_requiredPower is zero');
+          await expect(contract.connect(superOwner).submitTransaction(contract.address, 0, data))
+            .to.be.reverted; // With('owners do NOT have enough power');
 
-          await contract.connect(superOwner).submitAddOwner(owner3Address, 1)
-          await contract.connect(superOwner).submitAddOwner(deployerAddress, 1)
-          await expect(contract.connect(superOwner).submitAddOwner(anyWalletAddress, 1))
-            .to.be.revertedWith('too many owners');
+          data = txData(UMB_MULTISIG, 'changeRequiredPower', [0]);
 
-          await contract.connect(superOwner).submitRemoveOwner(deployerAddress)
-          await contract.connect(superOwner).submitRemoveOwner(owner3Address)
-          await contract.connect(superOwner).submitRemoveOwner(owner2Address)
-          await contract.connect(superOwner).submitRemoveOwner(owner1Address)
+          await expect(contract.connect(superOwner).submitTransaction(contract.address, 0, data))
+            .to.be.reverted; // With('_requiredPower is zero');
 
-          await expect(contract.connect(superOwner).submitRemoveOwner(superOwnerAddress))
-            .to.be.revertedWith('can\'t remove owner, because there will be not enough power left');
+          const data1 = txData(UMB_MULTISIG, 'addOwner', [owner3Address, 1]);
+          await contract.connect(superOwner).submitTransaction(contract.address, 0, data1);
+
+          const data2 = txData(UMB_MULTISIG, 'addOwner', [deployerAddress, 1]);
+          await contract.connect(superOwner).submitTransaction(contract.address, 0, data2);
+
+          data = txData(UMB_MULTISIG, 'removeOwner', [deployerAddress]);
+          await contract.connect(superOwner).submitTransaction(contract.address, 0, data);
+
+          data = txData(UMB_MULTISIG, 'removeOwner', [owner3Address]);
+          await contract.connect(superOwner).submitTransaction(contract.address, 0, data);
+
+          data = txData(UMB_MULTISIG, 'removeOwner', [owner2Address]);
+          await contract.connect(superOwner).submitTransaction(contract.address, 0, data);
+
+          data = txData(UMB_MULTISIG, 'removeOwner', [owner1Address]);
+          await contract.connect(superOwner).submitTransaction(contract.address, 0, data);
+
+          data = txData(UMB_MULTISIG, 'removeOwner', [superOwnerAddress]);
+
+          await expect(contract.connect(superOwner).submitTransaction(contract.address, 0, data))
+            .to.be.reverted; // With('can\'t remove owner, because there will be not enough power left');
         });
       })
     });
@@ -215,46 +257,50 @@ describe('UmbMultiSig', () => {
     describe('.whenOwnerDoesNotExist', () => {
       it('expect to throw when NOT executed by multisig', async () => {
         await expect(contract.addOwner(anyWalletAddress, 1))
-          .to.be.revertedWith('revert only MultiSigMinter can execute this')
+          .to.be.revertedWith('only MultiSigMinter can execute this')
       });
     });
   });
 
   describe('.addOwner()', () => {
     it('expect to throw when no power', async () => {
-      await expect(contract.connect(superOwner).submitAddOwner(anyWalletAddress, 0))
-        .to.be.revertedWith('_power is empty')
+      const data = txData(UMB_MULTISIG, 'addOwner', [anyWalletAddress, 0]);
+
+      await expect(contract.connect(superOwner).submitTransaction(contract.address, 0, data))
+        .to.be.reverted; // With('_power is empty')
     });
 
     it('expect to add owner', async () => {
-      const ownersCount = await contract.ownersCount();
       const totalCurrentPower = await contract.totalCurrentPower();
-      await contract.connect(superOwner).submitAddOwner(anyWalletAddress, 1)
+      const data = txData(UMB_MULTISIG, 'addOwner', [anyWalletAddress, 1]);
+      await contract.connect(superOwner).submitTransaction(contract.address, 0, data)
 
       expect(await contract.ownersPowers(anyWalletAddress)).to.eq(1, 'expect new owner to has power')
-      expect(await contract.ownersCount()).to.be.gt(ownersCount, 'expect to increase owners count')
       expect(await contract.totalCurrentPower()).to.eq(totalCurrentPower.add(1), 'expect valid totalCurrentPower')
     });
   })
 
   describe('.removeOwner()', () => {
     it('expect to throw when remove too much', async () => {
-      await contract.connect(superOwner).submitRemoveOwner(owner2Address)
-      await contract.connect(superOwner).submitRemoveOwner(owner1Address)
+      let data = txData(UMB_MULTISIG, 'removeOwner', [owner2Address]);
+      await contract.connect(superOwner).submitTransaction(contract.address, 0, data);
 
-      await expect(contract.connect(superOwner).submitRemoveOwner(superOwnerAddress))
-        .to.be.revertedWith('will be not enough power left')
+      data = txData(UMB_MULTISIG, 'removeOwner', [owner1Address]);
+      await contract.connect(superOwner).submitTransaction(owner1Address, 0, data);
+
+      data = txData(UMB_MULTISIG, 'removeOwner', [superOwnerAddress]);
+      await expect(contract.connect(superOwner).submitTransaction(contract.address, 0, data))
+        .to.be.reverted; // With('will be not enough power left')
     });
 
     it('expect to remove owner', async () => {
-      const ownersCount = await contract.ownersCount();
       const totalCurrentPower = await contract.totalCurrentPower();
-      await contract.connect(superOwner).submitRemoveOwner(owner1Address)
+      const data = txData(UMB_MULTISIG, 'removeOwner', [owner1Address]);
+      await contract.connect(superOwner).submitTransaction(contract.address, 0, data);
 
       expect(await contract.owners(1)).to.eq(owner2Address, 'should not lose owner2')
       expect(await contract.owners(0)).to.eq(superOwnerAddress, 'should not lose superOwner')
       expect(await contract.ownersPowers(owner1Address)).to.eq(0, 'expect no power')
-      expect(await contract.ownersCount()).to.be.lt(ownersCount, 'expect to increase owners count')
 
       expect(await contract.totalCurrentPower())
         .to.eq(totalCurrentPower.sub(powers[1]), 'expect valid totalCurrentPower')
@@ -263,20 +309,20 @@ describe('UmbMultiSig', () => {
 
   describe('.replaceOwner()', () => {
     it('expect to replace owner', async () => {
-      const ownersCount = await contract.ownersCount();
       const totalCurrentPower = await contract.totalCurrentPower();
-      await contract.connect(superOwner).submitReplaceOwner(owner2Address, anyWalletAddress)
+      const data = txData(UMB_MULTISIG, 'replaceOwner', [owner2Address, anyWalletAddress]);
+      await contract.connect(superOwner).submitTransaction(contract.address, 0, data);
 
       expect(await contract.ownersPowers(owner2Address)).to.eq(0, 'removed onwer should have no power')
       expect(await contract.ownersPowers(anyWalletAddress)).to.gt(0, 'new onwer should have power')
-      expect(await contract.ownersCount()).to.eq(ownersCount, 'owners count should not change')
       expect(await contract.totalCurrentPower()).to.eq(totalCurrentPower, 'totalCurrentPower should not change')
     });
   })
 
   describe('.changeRequiredPower()', () => {
     it('expect to change required power', async () => {
-      await contract.connect(superOwner).submitChangeRequiredPower(3)
+      const data = txData(UMB_MULTISIG, 'changeRequiredPower', [3]);
+      await contract.connect(superOwner).submitTransaction(contract.address, 0, data);
       expect(await contract.requiredPower()).to.eq(3)
     });
   });
@@ -287,12 +333,14 @@ describe('UmbMultiSig', () => {
     });
 
     it('returns false for non confirmed tx', async () => {
-      await contract.connect(owner1).submitChangeRequiredPower(3)
+      const data = txData(UMB_MULTISIG, 'changeRequiredPower', [3]);
+      await contract.connect(owner1).submitTransaction(contract.address, 0, data);
       expect(await contract.isConfirmed(0)).to.be.false
     });
 
     it('returns true for confirmed tx', async () => {
-      await contract.connect(superOwner).submitChangeRequiredPower(3)
+      const data = txData(UMB_MULTISIG, 'changeRequiredPower', [3]);
+      await contract.connect(superOwner).submitTransaction(contract.address, 0, data);
       expect(await contract.isConfirmed(0)).to.be.true
     });
   });
@@ -303,19 +351,22 @@ describe('UmbMultiSig', () => {
     });
 
     it('returns false for non executed tx', async () => {
-      await contract.connect(owner1).submitChangeRequiredPower(3)
+      const data = txData(UMB_MULTISIG, 'changeRequiredPower', [3]);
+      await contract.connect(owner1).submitTransaction(contract.address, 0, data);
       expect(await contract.isExceuted(0)).to.be.false
     });
 
     it('returns true for executed tx', async () => {
-      await contract.connect(superOwner).submitChangeRequiredPower(3)
+      const data = txData(UMB_MULTISIG, 'changeRequiredPower', [3]);
+      await contract.connect(superOwner).submitTransaction(contract.address, 0, data);
       expect(await contract.isExceuted(0)).to.be.true
     });
   });
 
   describe('.revokeLogConfirmation()', () => {
     it('expect to revoke confirmation', async () => {
-      await contract.connect(owner2).submitChangeRequiredPower(0)
+      const data = txData(UMB_MULTISIG, 'changeRequiredPower', [0]);
+      await contract.connect(owner2).submitTransaction(contract.address, 0, data);
       expect(await contract.getLogConfirmationCount(0)).to.eq(1);
 
       await contract.connect(owner2).revokeLogConfirmation(0)
@@ -327,13 +378,15 @@ describe('UmbMultiSig', () => {
     const id = 1;
 
     beforeEach(async () => {
-      await contract.connect(superOwner).submitChangeRequiredPower(9);
-      await contract.connect(superOwner).submitChangeRequiredPower(4);
+      let data = txData(UMB_MULTISIG, 'changeRequiredPower', [9]);
+      await contract.connect(superOwner).submitTransaction(contract.address, 0, data);
+      data = txData(UMB_MULTISIG, 'changeRequiredPower', [4]);
+      await contract.connect(superOwner).submitTransaction(contract.address, 0, data);
     });
 
     it('throws when not confirmed by owner', async () => {
       await expect(contract.connect(owner2).executeTransaction(id))
-        .to.be.revertedWith('transaction NOT confirmed by owner');
+        .to.be.revertedWith('NOT confirmed by owner');
     });
 
     it('expect to execute only when confirmed', async () => {
@@ -345,7 +398,7 @@ describe('UmbMultiSig', () => {
         .to.emit(contract, 'LogConfirmation').withArgs(owner2Address, id);
 
       await expect(contract.connect(owner1).confirmTransaction(id))
-        .to.emit(contract, 'LogExecution').withArgs(id, '0x');
+        .to.emit(contract, 'LogExecution').withArgs(id);
     });
 
     it('getTransactionShort returns tx details', async () => {
@@ -359,7 +412,8 @@ describe('UmbMultiSig', () => {
 
   describe('.getTransaction() and .getTransactionShort()', () => {
     beforeEach(async () => {
-      await contract.connect(owner1).submitChangeRequiredPower(256)
+      const data = txData(UMB_MULTISIG, 'changeRequiredPower', [256]);
+      await contract.connect(owner1).submitTransaction(contract.address, 0, data);
     });
 
     it('getTransaction returns tx details', async () => {
@@ -388,12 +442,15 @@ describe('UmbMultiSig', () => {
     });
 
     it('return 1 when one owner confirmed', async () => {
-      await contract.connect(owner1).submitChangeRequiredPower(256)
+      const data = txData(UMB_MULTISIG, 'changeRequiredPower', [256]);
+      await contract.connect(owner1).submitTransaction(contract.address, 0, data);
       expect(await contract.getLogConfirmationCount(0)).to.eq(1)
     });
 
     it('return 2 when 2 owners confirmed', async () => {
-      await expect(contract.connect(owner1).submitChangeRequiredPower(1))
+      const data = txData(UMB_MULTISIG, 'changeRequiredPower', [1]);
+
+      await expect(contract.connect(owner1).submitTransaction(contract.address, 0, data))
         .to.emit(contract, 'LogSubmission').withArgs(0)
 
       await contract.connect(owner2).confirmTransaction(0)
@@ -403,8 +460,9 @@ describe('UmbMultiSig', () => {
 
   describe('helpers', () => {
     beforeEach(async () => {
-      // I just want to have any tx executed, to I can test case with txId > 0
-      await contract.connect(superOwner).submitChangeRequiredPower(4);
+      // I just want to have any tx executed, so I can test case with txId > 0
+      const data = txData('UmbMultiSig', 'changeRequiredPower', [4]);
+      await contract.connect(superOwner).submitTransaction(contract.address, 0, data);
     });
 
     it('expect to revert if tx on destination contract reverts', async () => {
@@ -412,7 +470,7 @@ describe('UmbMultiSig', () => {
 
       await expect(contract.connect(superOwner)
         .submitStakingRewardsNotifyRewardAmountTx(stakingRewards.address, 555))
-        .to.revertedWith('Mock revert')
+        .to.reverted; // With('Mock revert')
     });
 
     describe('.submitTokenMintTx() with not enough power to execute', () => {
@@ -422,6 +480,7 @@ describe('UmbMultiSig', () => {
       const executed = true;
 
       beforeEach(async () => {
+        expect(await contract.isExceuted(0)).to.eq(true, 'isExecuted failed for #0');
         await contract.connect(owner1).submitTokenMintTx(umb.address, owner2Address, amount);
       });
 
@@ -431,10 +490,7 @@ describe('UmbMultiSig', () => {
         expect(destination).to.eq(umb.address, 'destination is invalid')
         expect(value).to.eq(0, 'value is invalid')
         expect(executed).to.eq(0, 'executed is invalid')
-        expect(data).to.eq(
-          '0x40c10f19000000000000000000000000' + owner2Address.slice(2).toLowerCase() +
-          '00000000000000000000000000000000000000000000000000000000000000' + amount.toString(16),
-          'data is invalid')
+        expect(data).to.eq(txData('UMB', 'mint', [owner2Address, amount]),'data is invalid')
       });
 
       it('checks for state', async () => {
@@ -447,13 +503,16 @@ describe('UmbMultiSig', () => {
         const confirmations = await contract.getLogConfirmations(id);
 
         expect(confirmations)
-          .to.eql([owner1Address], 'should be confirmed by valid owners')
+          .to.eql([owner1Address], 'should be confirmed by valid owners');
 
-        let ids = await contract.getTransactionIds(0, 2, pending, !executed)
-        expect(ids).to.eql([BigNumber.from(id)], 'only current tx should be returned');
+        let ids = (await contract.getTransactionIds(0, 2, !pending, !executed)).map((i: BigNumber) => i.toString());
+        expect(ids).to.eql(['0', '0']);
 
-        ids = await contract.getTransactionIds(0, 2, !pending, executed)
-        expect(ids).to.eql([BigNumber.from(0)], 'old tx should be returned');
+        ids = (await contract.getTransactionIds(0, 2, pending, !executed)).map((i: BigNumber) => i.toString());
+        expect(ids.includes(`${id}`)).true;
+
+        ids = (await contract.getTransactionIds(0, 2, !pending, executed)).map((i: BigNumber) => i.toString());
+        expect(ids).to.eql(['0', '0'], 'old tx should be returned');
       });
 
       describe('when tx confirmed and executed', () => {
@@ -475,11 +534,12 @@ describe('UmbMultiSig', () => {
           expect(await contract.getTransactionCount(pending, !executed)).to.eq(0, 'tx should not be pending');
           expect(await contract.getTransactionCount(!pending, executed)).to.eq(2, 'tx should be executed');
 
-          let ids = await contract.getTransactionIds(0, 2, pending, !executed)
-          expect(ids).to.eql([], 'all tx are executed so list should be empty');
+          let ids: BigNumber[] = await contract.getTransactionIds(0, 2, pending, !executed)
+          expect(ids.filter(i => !i.isZero()).map(i => i.toString()))
+            .to.eql([], 'all tx are executed so list should be empty');
 
           ids = await contract.getTransactionIds(1, 2, !pending, executed)
-          expect(ids).to.eql([BigNumber.from(id)], 'tx should be found');
+          expect(ids.map(i => i.toString())).to.eql([id.toString()], 'tx should be found');
         });
       });
     });
@@ -489,14 +549,15 @@ describe('UmbMultiSig', () => {
       await umb.mock.setRewardTokens.withArgs(...params).returns();
 
       await expect(contract.connect(superOwner).submitUMBSetRewardTokensTx(umb.address, ...params))
-        .to.emit(contract, 'LogExecution').withArgs(1, '0x')
+        .to.emit(contract, 'LogExecution').withArgs(1)
     })
 
     it('executes rUMB.startEarlySwap()', async () => {
       await rUmb.mock.startEarlySwap.withArgs().returns();
+      const data = txData('rUMB1', 'startEarlySwap', []);
 
-      await expect(contract.connect(superOwner).submitRUMBStartEarlySwapTx(rUmb.address))
-        .to.emit(contract, 'LogExecution').withArgs(1, '0x')
+      await expect(contract.connect(superOwner).submitTransaction(rUmb.address, 0, data))
+        .to.emit(contract, 'LogExecution').withArgs(1)
     })
 
     it('executes StakingRewards.setRewardsDistribution()', async () => {
@@ -504,7 +565,7 @@ describe('UmbMultiSig', () => {
 
       await expect(contract.connect(superOwner)
         .submitStakingRewardsSetRewardsDistributionTx(stakingRewards.address, anyWalletAddress))
-        .to.emit(contract, 'LogExecution').withArgs(1, '0x')
+        .to.emit(contract, 'LogExecution').withArgs(1)
     })
 
     it('executes StakingRewards.setRewardsDuration()', async () => {
@@ -512,15 +573,16 @@ describe('UmbMultiSig', () => {
 
       await expect(contract.connect(superOwner)
         .submitStakingRewardsSetRewardsDurationTx(stakingRewards.address, 1234))
-        .to.emit(contract, 'LogExecution').withArgs(1, '0x')
+        .to.emit(contract, 'LogExecution').withArgs(1)
     })
 
     it('executes StakingRewards.finishFarming()', async () => {
       await stakingRewards.mock.finishFarming.returns();
+      const data = txData('StakingRewards', 'finishFarming', []);
 
       await expect(contract.connect(superOwner)
-        .submitStakingRewardsFinishFarmingTx(stakingRewards.address))
-        .to.emit(contract, 'LogExecution').withArgs(1, '0x')
+        .submitTransaction(stakingRewards.address, 0, data))
+        .to.emit(contract, 'LogExecution').withArgs(1)
     })
   });
 });

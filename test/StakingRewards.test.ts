@@ -1,16 +1,16 @@
-import 'hardhat'; // require for IntelliJ to run tests
+import hre from 'hardhat'; // require for IntelliJ to run tests
 import '@nomiclabs/hardhat-waffle'; // require for IntelliJ to run tests
 
 import {ethers} from 'hardhat';
 import {expect} from 'chai';
-import {BigNumber, ContractFactory, Signer} from 'ethers';
+import {BigNumber, ContractFactory, Signer, Contract} from 'ethers';
 import {deployMockContract} from '@ethereum-waffle/mock-contract';
-import {Contract} from '@ethersproject/contracts';
 
 import {getArtifacts, getProvider} from '../scripts/helpers';
 import {getBlockTimestamp, mintBlock, numberToWei} from './utils';
+import {MockContract} from 'ethereum-waffle';
 
-const [UMB, rUMB1, StakingRewards] = getArtifacts('UMB', 'rUMB1', 'StakingRewards');
+const [UMB, rUMB1, StakingRewards] = getArtifacts(hre, 'UMB', 'rUMB1', 'StakingRewards');
 
 describe('StakingRewards', () => {
   let rewardsDistributor: Signer;
@@ -18,8 +18,8 @@ describe('StakingRewards', () => {
   let staker2: Signer;
   let staker1Address: string;
   let staker2Address: string;
-  let umb: Contract;
-  let rUmb: Contract;
+  let umb: MockContract;
+  let rUmb: MockContract;
   let contract: Contract;
 
   const setup = async () => {
@@ -47,7 +47,7 @@ describe('StakingRewards', () => {
   };
 
   const mockTransferFrom = async (
-    token: Contract,
+    token: MockContract,
     from?: Signer,
     to?: string,
     amount?: string | number | BigNumber,
@@ -59,7 +59,7 @@ describe('StakingRewards', () => {
   };
 
   const mockTransfer = async (
-    token: Contract,
+    token: MockContract,
     to: Signer,
     amount: string | number | BigNumber,
     returns = true
@@ -98,23 +98,23 @@ describe('StakingRewards', () => {
     });
 
     it('expect throw on stake', async () => {
-      await expect(contract.stake(1)).to.revertedWith('revert Stake period not started yet');
+      await expect(contract.stake(1)).to.revertedWith('Stake period not started yet');
     });
 
     it('expect throw on finishFarming', async () => {
-      await expect(contract.finishFarming()).to.revertedWith('revert can\'t stop if not started or already finished');
+      await expect(contract.finishFarming()).to.revertedWith('can\'t stop if not started or already finished');
     });
   });
 
   describe('.setRewardsDuration()', () => {
     it('expect throw when sent NOT from owner', async () => {
       await expect(contract.connect(rewardsDistributor).setRewardsDuration(10))
-        .to.revertedWith('revert Ownable: caller is not the owner');
+        .to.revertedWith('Ownable: caller is not the owner');
     });
 
     it('expect throw for empty duration', async () => {
       await expect(contract.setRewardsDuration(0))
-        .to.revertedWith('revert empty _rewardsDuration');
+        .to.revertedWith('empty _rewardsDuration');
     });
 
     it('expect to emit event', async () => {
@@ -169,7 +169,7 @@ describe('StakingRewards', () => {
     });
 
     it('expect throw when sent NOT from rewardsDistributor', async () => {
-      await expect(contract.notifyRewardAmount(2)).to.revertedWith('revert Caller is not RewardsDistribution contract');
+      await expect(contract.notifyRewardAmount(2)).to.revertedWith('Caller is not RewardsDistribution contract');
     });
 
     it('expect throw when reward to high', async () => {
@@ -417,7 +417,7 @@ describe('StakingRewards', () => {
   describe('.finishFarming()', () => {
     it('expect to throw when executed by NOT an owner', async () => {
       await expect(contract.connect(staker1).finishFarming())
-        .to.revertedWith('revert Ownable: caller is not the owner');
+        .to.revertedWith('Ownable: caller is not the owner');
     });
 
     it('expect throw when farming not started', async () => {
@@ -447,7 +447,7 @@ describe('StakingRewards', () => {
       it('throw when call finishFarming multiple times', async () => {
         await rUmb.mock.burn.withArgs(contractBalance).returns();
         await contract.finishFarming();
-        await expect(contract.finishFarming()).to.revertedWith('revert farming is stopped');
+        await expect(contract.finishFarming()).to.revertedWith('farming is stopped');
       });
 
       describe('with staked tokens', () => {

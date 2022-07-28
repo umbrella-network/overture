@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [1.0.1] - 2021-07-21
 ### Changed
-- revert `UmbMultiSig` to audited version from commit 23778f16
+- revert `UmbMultiSig` to audited version from commit [23778f16](https://github.com/umbrella-network/overture/tree/23778f165bc00a0906ae0aa81d119849982d4c56)
 
 ## [1.0.0] - 2021-02-09
 ### Added

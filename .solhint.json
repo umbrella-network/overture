@@ -5,6 +5,10 @@
       "error",
       4
     ],
+    "max-line-length": [
+      "warning",
+      120
+    ],
     "compiler-fixed": "off",
     "comprehensive-interface": "off",
     "no-simple-event-func-name": "off",
