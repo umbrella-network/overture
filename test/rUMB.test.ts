@@ -1,8 +1,7 @@
-import {artifacts, ethers} from 'hardhat';
-import {solidity} from 'ethereum-waffle';
+import hre, {artifacts, ethers} from 'hardhat';
+import {MockContract, solidity} from 'ethereum-waffle';
 import chai, {expect} from 'chai';
-import {Signer} from 'ethers';
-import {Contract} from '@ethersproject/contracts';
+import {Signer, Contract} from 'ethers';
 import web3 from 'web3';
 import {deployMockContract} from '@ethereum-waffle/mock-contract';
 
@@ -15,7 +14,7 @@ describe('rUMB1', async () => {
   const swapDelay = oneYear;
   const name = web3.utils.randomHex(16), symbol = name.substring(8);
 
-  let rUMB1: Contract, swapReceiver: Contract;
+  let rUMB1: Contract, swapReceiver: MockContract;
   let initialBalance: number, maxAllowedTotalSupply: number, totalAmountToBeSwapped: number, swapDuration: number;
   let owner: Signer, ownerAddress: string;
   let holder: Signer, holderAddress: string;
@@ -36,14 +35,14 @@ describe('rUMB1', async () => {
   });
 
   const setup = async (initialBalance: number, maxAllowedTotalSupply: number, swapDuration: number) => {
-    const [owner, holder, holder2] = await ethers.getSigners();
+    const [owner, holder, holder2] = await hre.ethers.getSigners();
 
     const contract = await ethers.getContractFactory('rUMB1');
     const swapReceiver = await deployMockContract(owner, (await artifacts.readArtifact('ISwapReceiver')).abi);
 
     const rUMB1 = await contract.deploy(
-      owner.address,
-      holder.address,
+      await owner.getAddress(),
+      await holder.getAddress(),
       initialBalance,
       maxAllowedTotalSupply,
       swapDuration,
@@ -62,10 +61,10 @@ describe('rUMB1', async () => {
       initialBalance,
       maxAllowedTotalSupply,
       owner,
-      ownerAddress: owner.address,
-      holderAddress: holder.address,
+      ownerAddress: await owner.getAddress(),
+      holderAddress: await holder.getAddress(),
       holder,
-      holder2Address: holder2.address,
+      holder2Address: await holder2.getAddress(),
       holder2,
       rUMB1,
       totalAmountToBeSwapped: maxAllowedTotalSupply
@@ -149,7 +148,7 @@ describe('rUMB1', async () => {
       const contract = await ethers.getContractFactory('rUMB1');
 
       await expect(contract.deploy(ownerAddress, ethers.constants.AddressZero, 0, 0, swapDuration, name, symbol))
-        .to.revertedWith('revert _maxAllowedTotalSupply is empty');
+        .to.revertedWith('_maxAllowedTotalSupply is empty');
     });
 
     it('Swap duration cannot be equal to zero', async () => {
@@ -157,7 +156,7 @@ describe('rUMB1', async () => {
 
       await
         expect(contract.deploy(ownerAddress, ethers.constants.AddressZero, 0, maxAllowedTotalSupply, 0, name, symbol))
-        .to.revertedWith('revert swapDuration is empty');
+        .to.revertedWith('swapDuration is empty');
     });
   });
 
@@ -179,12 +178,12 @@ describe('rUMB1', async () => {
 
     it('The owner cannot mint more tokens than the maximum supply', async () => {
       await expect(rUMB1.mint(holderAddress, maxAllowedTotalSupply + 1))
-        .to.revertedWith('revert total supply limit exceeded');
+        .to.revertedWith('total supply limit exceeded');
     });
 
     it('Nobody else can mint tokens', async () => {
       await expect(rUMB1.connect(holder).mint(holderAddress, maxAllowedTotalSupply))
-        .to.revertedWith('revert Ownable: caller is not the owner');
+        .to.revertedWith('Ownable: caller is not the owner');
     });
   });
 
@@ -199,7 +198,7 @@ describe('rUMB1', async () => {
     });
 
     it('Nobody can burn more tokens than they have', async () => {
-      await expect(rUMB1.connect(holder).burn(51)).to.revertedWith('revert not enough tokens to burn');
+      await expect(rUMB1.connect(holder).burn(51)).to.revertedWith('not enough tokens to burn');
     });
 
     it('Maximum supply drops when tokens burn', async () => {
@@ -231,12 +230,12 @@ describe('rUMB1', async () => {
     });
 
     it('Others cannot start early swap', async () => {
-      await expect(rUMB1.connect(holder).startEarlySwap()).to.revertedWith('revert Ownable: caller is not the owner');
+      await expect(rUMB1.connect(holder).startEarlySwap()).to.revertedWith('Ownable: caller is not the owner');
     });
 
     it('Cannot start early swap if the swapping period has already started', async () => {
       await ethers.provider.send('evm_increaseTime', [swapDelay]);
-      await expect(rUMB1.startEarlySwap()).to.revertedWith('revert swap is already allowed');
+      await expect(rUMB1.startEarlySwap()).to.revertedWith('swap is already allowed');
     });
   });
 
@@ -300,14 +299,14 @@ describe('rUMB1', async () => {
 
     it('Cannot swap if the swapping period has not started yet', async () => {
       await ethers.provider.send('evm_increaseTime', [swapDelay - 3]);
-      await expect(rUMB1.swapFor(swapReceiver.address)).to.revertedWith('revert swapping period has not started yet');
+      await expect(rUMB1.swapFor(swapReceiver.address)).to.revertedWith('swapping period has not started yet');
     });
 
     it('Cannot swap if not enough tokens are unlocked', async () => {
       await ethers.provider.send('evm_increaseTime', [swapDelay + swapDuration - 2]);
 
       await expect(rUMB1.connect(holder).swapFor(swapReceiver.address))
-        .to.revertedWith('revert your swap is over the limit');
+        .to.revertedWith('your swap is over the limit');
     });
 
     it('Successfully swapped all tokens', async () => {
@@ -351,7 +350,7 @@ describe('rUMB1', async () => {
       await rUMB1.connect(holder).swapFor(swapReceiver.address);
 
       await expect(rUMB1.connect(holder).swapFor(swapReceiver.address))
-        .to.revertedWith('revert you dont have tokens to swap');
+        .to.revertedWith('you dont have tokens to swap');
     });
   });
 
@@ -395,13 +394,13 @@ describe('rUMB1', async () => {
       await UMB.setRewardTokens([rUMB1.address], [false]);
 
       await expect(rUMB1.connect(holder).swapFor(UMB.address))
-        .to.revertedWith('revert only reward token can be swapped');
+        .to.revertedWith('only reward token can be swapped');
     });
 
     it('Cannot swap if UMB token exceeds the maximum amount', async () => {
       await UMB.mint(holderAddress, 34);
 
-      await expect(rUMB1.connect(holder).swapFor(UMB.address)).to.revertedWith('revert total supply limit exceeded');
+      await expect(rUMB1.connect(holder).swapFor(UMB.address)).to.revertedWith('total supply limit exceeded');
     });
   });
 });
