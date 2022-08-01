@@ -1,9 +1,8 @@
 import {ethers} from 'hardhat';
-import {solidity} from 'ethereum-waffle';
+import {MockContract, solidity} from 'ethereum-waffle';
 import chai, {expect} from 'chai';
-import {Signer} from 'ethers';
+import {Signer, Contract} from 'ethers';
 import web3 from 'web3';
-import {Contract} from '@ethersproject/contracts';
 
 import IERC20 from '@openzeppelin/contracts/build/contracts/IERC20.json';
 import {deployMockContract} from '@ethereum-waffle/mock-contract';
@@ -17,7 +16,7 @@ describe('UMB', async () => {
   let initialBalance: number, maxAllowedTotalSupply: number;
   let owner: Signer, ownerAddress: string;
   let holder: Signer, holderAddress: string;
-  let rewardToken1: Contract, rewardToken2: Contract;
+  let rewardToken1: MockContract, rewardToken2: MockContract;
 
   beforeEach(async () => {
     ({
@@ -129,12 +128,12 @@ describe('UMB', async () => {
 
     it('Cannot pass an empty array with reward tokens', async () => {
       await expect(UMB.setRewardTokens([], []))
-        .to.revertedWith('revert please pass a positive number of reward tokens');
+        .to.revertedWith('please pass a positive number of reward tokens');
     });
 
     it('Cannot pass a different number of addresses and statuses', async () => {
       await expect(UMB.setRewardTokens([rewardToken1.address], []))
-        .to.revertedWith('revert please pass same number of tokens and statuses');
+        .to.revertedWith('please pass same number of tokens and statuses');
     });
 
     it('Only the owner can set reward tokens', async () => {
@@ -142,7 +141,7 @@ describe('UMB', async () => {
         statuses = [true, false];
 
       await expect(UMB.connect(holder).setRewardTokens(addresses, statuses))
-        .to.revertedWith('revert Ownable: caller is not the owner');
+        .to.revertedWith('Ownable: caller is not the owner');
     });
   });
 
@@ -164,12 +163,12 @@ describe('UMB', async () => {
 
     it('The owner cannot mint more tokens than the maximum supply', async () => {
       await expect(UMB.mint(holderAddress, maxAllowedTotalSupply + 1))
-        .to.revertedWith('revert total supply limit exceeded');
+        .to.revertedWith('total supply limit exceeded');
     });
 
     it('Nobody else can mint tokens', async () => {
       await expect(UMB.connect(holder).mint(holderAddress, maxAllowedTotalSupply))
-        .to.revertedWith('revert Ownable: caller is not the owner');
+        .to.revertedWith('Ownable: caller is not the owner');
     });
   });
 
@@ -184,7 +183,7 @@ describe('UMB', async () => {
     });
 
     it('Nobody can burn more tokens than they have', async () => {
-      await expect(UMB.connect(holder).burn(51)).to.revertedWith('revert not enough tokens to burn');
+      await expect(UMB.connect(holder).burn(51)).to.revertedWith('not enough tokens to burn');
     });
 
     it('Maximum supply drops when tokens burn', async () => {
@@ -208,11 +207,11 @@ describe('UMB', async () => {
 
     it('Cannot mint more than the maximum supply', async () => {
       await expect(UMB.connect(holder).swapMint(holderAddress, 51))
-        .to.revertedWith('revert total supply limit exceeded');
+        .to.revertedWith('total supply limit exceeded');
     });
 
     it('Unassigned caller cannot mint tokens', async () => {
-      await expect(UMB.swapMint(holderAddress, 50)).to.revertedWith('revert only reward token can be swapped');
+      await expect(UMB.swapMint(holderAddress, 50)).to.revertedWith('only reward token can be swapped');
     });
   });
 
