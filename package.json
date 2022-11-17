@@ -1,6 +1,6 @@
 {
   "name": "overture",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "Umbrella DeFi contracts",
   "main": "hardhat.config.ts",
   "directories": {
@@ -52,7 +52,7 @@
   },
   "scripts": {
     "clear": "rm -rf cache artifacts deployments",
-    "coveralls": "hardhat coverage && cat coverage/lcov.info | coveralls",
+    "coveralls": "hardhat coverage && cat coverage/lcov.info",
     "lint": "eslint . --ext .js,.jsx,.ts",
     "lint:fix": "npm run lint -- --fix",
     "compile": "npx hardhat compile",
